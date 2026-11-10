@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ultrasonic Messenger — Link Lab v9</title>
+<title>Ultrasonic Messenger — Link Lab v10</title>
 <style>
 :root{color-scheme:dark;--bg:#0d1119;--panel:#171f2d;--line:#344258;--fg:#eef3ff;--muted:#9eacc3;--accent:#a9b8ff;--green:#7de0a5;--amber:#ffd27d;--red:#ff8d8d}
 *{box-sizing:border-box}body{margin:auto;max-width:1000px;padding:18px;background:var(--bg);color:var(--fg);font:14px system-ui}h1{font-size:23px;margin:0}h2{font-size:16px;margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:120px}.status{padding:10px;border:1px solid var(--line);background:#0e1521;border-radius:9px;margin-top:9px;white-space:pre-wrap;overflow-wrap:anywhere}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#65738a;margin-right:6px}.dot.on{background:var(--green);box-shadow:0 0 10px #7de0a577}.dot.wait{background:var(--amber)}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}input,select,textarea{width:100%;background:#0e1521;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}textarea{min-height:70px;resize:vertical}button{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}button.secondary{background:#344158;color:var(--fg)}button.danger{background:#633b48;color:white}button:disabled{opacity:.4;cursor:not-allowed}.log{height:200px;overflow:auto;font:12px ui-monospace,monospace;background:#0e1521;border:1px solid var(--line);border-radius:9px;padding:9px}.log div{white-space:pre-wrap;overflow-wrap:anywhere}.messages{height:210px;overflow:auto;display:flex;flex-direction:column;gap:7px}.bubble{max-width:95%;padding:9px 11px;border-radius:11px;background:#26334a;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.me{align-self:flex-end;background:#303b61}.bubble .meta{font-size:10px;color:#b4c0d5;margin-bottom:4px}.pill{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:20px;color:var(--muted)}
@@ -9,8 +9,8 @@ canvas{display:block;width:100%;background:#0b111b;border:1px solid var(--line);
 .check{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--fg)}.check input{width:auto}
 ul.tips{margin:6px 0 0 18px;padding:0;color:var(--muted);font-size:12px;line-height:1.55}
 </style></head><body>
-<h1>Ultrasonic Messenger <span class="pill">Link Lab v9</span></h1>
-<p class="muted">Speaker-to-microphone messaging between nearby devices: 16-tone FSK, Costas-array preamble sync, Reed–Solomon error correction, CRC and acknowledged delivery with retries. No server or network carries the messages.</p>
+<h1>Ultrasonic Messenger <span class="pill">Link Lab v10</span></h1>
+<p class="muted">Speaker-to-microphone messaging in the 19–22 kHz band. Each symbol carries up to 128 parallel tones (32 groups × 2 bits, an “audio QR”), synced by an up/down chirp that also corrects clock and Doppler drift, protected by Reed–Solomon (≈50% parity) and CRC, with acknowledged delivery. No server or network carries the messages.</p>
 
 <section class="card" style="margin-top:12px"><div class="row"><button id="enableAudio">Enable microphone &amp; speaker</button><div class="grow small" id="audioState">Audio is off. Tap the button (browsers require a tap before audio can start). HTTPS is required.</div></div></section>
 
@@ -29,12 +29,11 @@ ul.tips{margin:6px 0 0 18px;padding:0;color:var(--muted);font-size:12px;line-hei
 <section class="card">
 <h2>Radio settings</h2>
 <div class="grid" style="margin:0;grid-template-columns:1fr 1fr">
-<div><label>Band</label><select id="band"><option value="near">Near-ultrasonic · 16.8 kHz+</option><option value="ultra">Ultrasonic · 18.0 kHz+</option><option value="audible">Audible · 1.5 kHz+ (debug)</option><option value="custom">Custom</option></select></div>
-<div><label>Speed</label><select id="speed"><option value="robust">Robust · 80 ms</option><option value="balanced">Balanced · 50 ms</option><option value="fast">Fast · 32 ms</option><option value="custom">Custom</option></select></div>
-<div><label>Lowest tone (Hz)</label><input id="base" type="number" step="50"></div>
-<div><label>Tone spacing (Hz)</label><input id="spacing" type="number" step="5"></div>
-<div><label>Symbol length (ms)</label><input id="symMs" type="number" step="1"></div>
-<div><label>Volume <span id="ampVal"></span></label><input id="amp" type="range" min="0.1" max="1" step="0.05"></div>
+<div><label>Band</label><select id="band"><option value="b19">19.0–22.0 kHz (default)</option><option value="b20">20.0–22.0 kHz (fully inaudible)</option><option value="audible">2.0–5.0 kHz (audible, debug)</option><option value="custom">Custom</option></select></div>
+<div><label>Mode</label><select id="preset"><option value="max">Max bandwidth · 128 tones · 43 ms</option><option value="fast">Fast turnaround · 32 tones · 11 ms</option><option value="turbo">Turbo symbols · 16 tones · 125 sym/s</option><option value="range">Long range · 8 tones · slow</option></select></div>
+<div><label>Lowest tone (Hz)</label><input id="lo" type="number" step="100"></div>
+<div><label>Highest tone (Hz)</label><input id="hi" type="number" step="100"></div>
+<div style="grid-column:1/-1"><label>Volume <span id="ampVal"></span></label><input id="amp" type="range" min="0.1" max="1" step="0.05"></div>
 </div>
 <div id="summary" class="status small"></div>
 <div id="settingsMsg" class="small"></div>
@@ -54,24 +53,24 @@ ul.tips{margin:6px 0 0 18px;padding:0;color:var(--muted);font-size:12px;line-hei
 <section class="card"><h2>Diagnostics</h2>
 <div id="stats" class="status small">Audio off.</div>
 <label>Receiver spectrum around the band (dashed = the 16 tones)</label><canvas id="spectrum" width="900" height="170" style="height:170px"></canvas>
-<label>Tone waterfall (rows = tones 0–15, time →; yellow = preamble lock, green = frame OK, red = failed)</label><canvas id="waterfall" width="600" height="128" style="height:128px"></canvas>
+<label>Tone waterfall (rows = tones, low at bottom; time →; yellow = chirp lock, green = frame OK, red = failed)</label><canvas id="waterfall" width="600" height="256" style="height:200px"></canvas>
 <div id="decoderStatus" class="status small">Decoder: idle</div>
 </section>
 </div>
 
 <section class="card" style="margin-top:12px"><h2>If devices do not see each other</h2><ul class="tips">
-<li>Both devices must use identical radio settings. Open the app on the second device by scanning the QR code above; it carries the settings.</li>
-<li>Run <b>Self-test</b> on each device. If it fails, the phone cannot hear its own speaker in that band: raise media volume, switch to <i>Near-ultrasonic</i>, or try <i>Audible</i> to confirm everything else works.</li>
-<li>Use <b>Tone sweep</b> to see which of the 16 tones your hardware passes. Many phone speakers and microphones lose output above about 18 kHz.</li>
-<li>Disconnect Bluetooth audio. Keep devices 0.3–3 m apart, and keep the microphone uncovered.</li>
-<li>Acoustic links are half-duplex. The app listens before it talks and retries unacknowledged packets, but a beacon takes about 3–4 s on air.</li>
-<li>Keep the screen on. Mobile browsers pause audio for background tabs.</li>
+<li>Both devices must use identical band and mode. Open the app on the second device by scanning the QR code above; it carries the settings.</li>
+<li>Run <b>Self-test</b> on each device first. If it fails, that phone cannot play or hear its own 19–22 kHz tones: raise media volume to maximum, try <i>Long range</i>, or try the <i>Audible</i> band to confirm everything else works.</li>
+<li>Use <b>Tone sweep</b> to see which tones your hardware passes. Many phone speakers and microphones roll off above 20–21 kHz; weak tones are compensated, but dead ones cost error-correction budget.</li>
+<li><i>Max bandwidth</i> carries the most data per second; <i>Fast turnaround</i> and <i>Turbo</i> have shorter symbols that tolerate hand movement better but resist echoes less; <i>Long range</i> concentrates power into few tones for distance.</li>
+<li>Many simultaneous tones need about 7 dB more signal than a single tone. If messages fail beyond 1 m, move closer or switch to <i>Long range</i>.</li>
+<li>Loud multi-tone playback can produce a faint audible buzz on some speakers (intermodulation). Lower the volume a little if you hear it. Some young people can hear 19 kHz; use 20–22 kHz to avoid that.</li>
+<li>Disconnect Bluetooth audio, keep the microphone uncovered, and keep the screen on (mobile browsers pause background audio).</li>
 </ul></section>
 
 <script>
 /*MODEM-START*/
 var UM=(function(){'use strict';
-const NT=16,PRE=[0,2,8,9,12,4,14,10,15,13,7,6,3,11,1,5],NPRE=16,HDR_SYMS=12,MAGIC=10,MAX_BODY=200,TH=0.40;
 const TYPE={BEACON:1,PAIR_REQ:2,PAIR_ACK:3,MSG:4,ACK:5,PING:6,PONG:7};const TYPE_NAME={};for(const k in TYPE)TYPE_NAME[TYPE[k]]=k;
 // ---- GF(256) Reed-Solomon (poly 0x11d, fcr 0) ----
 const EXP=new Uint8Array(512),LOG=new Uint8Array(256);(function(){let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&256)x^=0x11d}for(let i=255;i<512;i++)EXP[i]=EXP[i-255]})();
@@ -93,47 +92,122 @@ function rsDecode(cw,n,erase){erase=erase||[];let m=Array.from(cw);if(erase.leng
 // errors-only first, then erase the least-confident bytes (soft decision)
 function rsDecodeSoft(cw,n,conf,maxErase){try{return rsDecode(cw,n,[])}catch(e){}const order=conf.map((v,i)=>[v,i]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);for(let k=2;k<=maxErase;k+=2){try{return rsDecode(cw,n,order.slice(0,k))}catch(e){}}return null}
 function crc16(a){let c=65535;for(const b of a){c^=b<<8;for(let i=0;i<8;i++)c=(c&32768)?((c<<1)^0x1021)&65535:(c<<1)&65535}return c}
-const paritySize=L=>Math.min(255-L,Math.max(8,Math.ceil(L*0.3)));
-const frameSymbols=L=>NPRE+HDR_SYMS+2*(L+paritySize(L));
-const bodyLen=payloadLen=>5+payloadLen+2;
-function frameDuration(cfg,L){return(frameSymbols(L)*cfg.symMs+80)/1000}
-function makeConfig(o){const sr=o.sampleRate,S=o.symMs/1000*sr,G=Math.round(Math.max(0.008,0.22*o.symMs/1000)*sr),M=Math.round(0.04*S),W=Math.max(64,Math.floor(S)-G-M),h=Math.max(16,Math.round(S/10));const freqs=[];for(let k=0;k<NT;k++)freqs.push(o.base+k*o.spacing);const win=new Float32Array(W);for(let i=0;i<W;i++)win[i]=0.5-0.5*Math.cos(2*Math.PI*(i+0.5)/W);const coeff=new Float64Array(NT);for(let k=0;k<NT;k++)coeff[k]=2*Math.cos(2*Math.PI*freqs[k]/sr);const ea=3e-5*W/4;return{sampleRate:sr,symMs:o.symMs,base:o.base,spacing:o.spacing,S,G,M,W,h,freqs,win,coeff,eps:ea*ea,ref:(W/4)*(W/4),binsApart:o.spacing*W/sr}}
-function encodeFrame(spec){const payload=Array.from(spec.payload||[]);const body=[(spec.src>>8)&255,spec.src&255,(spec.dst>>8)&255,spec.dst&255,spec.seq&255].concat(payload);const L=body.length+2;if(L>MAX_BODY)throw new Error('payload too long');const hdr=[(MAGIC<<4)|(spec.type&15),L];const c=crc16(hdr.concat(body));body.push(c>>8,c&255);const cw=rsEncode(hdr,4).concat(rsEncode(body,paritySize(L)));const syms=PRE.slice();for(const b of cw)syms.push(b>>4,b&15);return syms}
-// continuous-phase FSK: no clicks between symbols, short fade at the frame edges
-function synthesize(cfg,syms,amp){const sr=cfg.sampleRate,S=cfg.S,lead=Math.round(0.03*sr),tail=Math.round(0.05*sr),body=Math.round(syms.length*S),out=new Float32Array(lead+body+tail),fade=Math.round(0.006*sr),TWO=2*Math.PI;let ph=0;for(let k=0;k<syms.length;k++){const a=Math.round(k*S),b=Math.round((k+1)*S),w=TWO*cfg.freqs[syms[k]]/sr;for(let i=a;i<b;i++){let g=amp;if(i<fade)g*=0.5-0.5*Math.cos(Math.PI*i/fade);else if(body-i<fade)g*=0.5-0.5*Math.cos(Math.PI*(body-i)/fade);out[lead+i]=g*Math.sin(ph);ph+=w;if(ph>TWO)ph-=TWO}}return out}
-function sweep(cfg,toneSec,amp){const sr=cfg.sampleRate,n=Math.round(toneSec*sr),out=new Float32Array(NT*n+Math.round(0.05*sr)),fade=Math.round(0.006*sr);for(let k=0;k<NT;k++){const w=2*Math.PI*cfg.freqs[k]/sr;for(let i=0;i<n;i++){let g=amp;if(i<fade)g*=0.5-0.5*Math.cos(Math.PI*i/fade);else if(n-i<fade)g*=0.5-0.5*Math.cos(Math.PI*(n-i)/fade);out[k*n+i]=g*Math.sin(w*i)}}return out}
+// ===== Multi-tone "audio QR" modem =====
+// Every symbol lights one tone in each of ng groups of 4 tones (2 bits per group, all groups in parallel).
+// Frame: up-chirp + down-chirp (sync + clock/Doppler estimate), 4 training symbols (per-tone gain), header RS(6,2), body RS + CRC.
+const MAGIC=11,MAX_BODY=200,HDR_BYTES=6,TH=0.2,REF=48000;
+const PRESETS={
+ max:{tw:2048,g:384,r:96,maxGroups:64,name:'Max bandwidth'},
+ fast:{tw:512,g:256,r:64,maxGroups:64,name:'Fast turnaround'},
+ turbo:{tw:256,g:128,r:32,maxGroups:64,name:'Turbo symbols'},
+ range:{tw:1024,g:384,r:96,maxGroups:2,name:'Long range'}};
+const CH={len:2048/REF,gap:96/REF,post:192/REF,lead:0.012,tail:0.03,taper:0.002};
+const paritySize=L=>Math.min(255-L,Math.max(16,Math.ceil(L*0.5)));
+const bodyLen=n=>5+n+2;
+function makeConfig(o){const p=PRESETS[o.preset]||PRESETS.max,sr=o.sampleRate,Tw=p.tw/REF,G=p.g/REF,R=p.r/REF,Ts=Tw+G,df=1/Tw;
+ const avail=o.hi>o.lo?Math.floor((o.hi-o.lo)/df+1e-6)+1:0,ng=Math.max(0,Math.min(p.maxGroups,Math.floor(avail/4))),nt=4*ng;
+ const freqs=[];for(let i=0;i<nt;i++)freqs.push(o.lo+(nt>1?Math.round(i*(avail-1)/(nt-1)):0)*df);
+ const cLo=o.lo,cHi=o.lo+Math.max(1,avail-1)*df,Tc=CH.len,k=(cHi-cLo)/Tc,D=Tc+CH.gap,S0=D+Tc+CH.post;
+ return{sampleRate:sr,preset:o.preset,presetName:p.name,lo:o.lo,hi:o.hi,Tw,G,R,Ts,df,ng,nt,avail,freqs,off:R+2*(G-R)/3,N:Math.round(Tw*sr),cLo,cHi,Tc,k,D,S0,
+  bitrate:ng?2*ng/Ts:0,symRate:1/Ts,echoMs:2*(G-R)/3*1000}}
+function frameSymbols(cfg,L){const nb=HDR_BYTES+L+paritySize(L);return 4+Math.ceil(4*nb/cfg.ng)}
+function frameDuration(cfg,L){return CH.lead+cfg.S0+frameSymbols(cfg,L)*cfg.Ts+cfg.R+CH.tail}
+function encodeFrame(cfg,spec){const payload=Array.from(spec.payload||[]),body=[(spec.src>>8)&255,spec.src&255,(spec.dst>>8)&255,spec.dst&255,spec.seq&255].concat(payload),L=body.length+2;
+ if(L>MAX_BODY)throw new Error('payload too long');const hdr=[(MAGIC<<4)|(spec.type&15),L],c=crc16(hdr.concat(body));body.push(c>>8,c&255);
+ const bytes=rsEncode(hdr,4).concat(rsEncode(body,paritySize(L))),ng=cfg.ng,syms=[],dib=[];
+ for(const b of bytes)dib.push(b>>6,(b>>4)&3,(b>>2)&3,b&3); // a byte's 4 dibits sit side by side in one symbol, so a noise burst hits few bytes
+ for(let s=0;s<4;s++)syms.push(new Array(ng).fill(s));
+ for(let m=0;m*ng<dib.length;m++){const row=new Array(ng);for(let g=0;g<ng;g++){const i=m*ng+g;row[g]=i<dib.length?dib[i]:((g+m)&3)}syms.push(row)}
+ return syms}
+function chirpAt(cfg,m,sr,up){const t=m/sr;return 2*Math.PI*(up?(cfg.cLo*t+cfg.k*t*t/2):(cfg.cHi*t-cfg.k*t*t/2))}
+function taper(m,L,tp){return m<tp?0.5-0.5*Math.cos(Math.PI*m/tp):(L-1-m<tp?0.5-0.5*Math.cos(Math.PI*(L-1-m)/tp):1)}
+// sum of sinusoids with rotating phasors; with dst=null returns the peak (used to pick low-peak phases)
+function tones(dst,a0,len,fr,ph,sr,step,env){const n=fr.length,c=new Float64Array(n),s=new Float64Array(n),wc=new Float64Array(n),ws=new Float64Array(n);for(let q=0;q<n;q++){c[q]=Math.cos(ph[q]);s[q]=Math.sin(ph[q]);const w=2*Math.PI*fr[q]*step/sr;wc[q]=Math.cos(w);ws[q]=Math.sin(w)}
+ let pk=0;for(let i=0;i<len;i+=step){let v=0;for(let q=0;q<n;q++){v+=c[q];const nc=c[q]*wc[q]-s[q]*ws[q];s[q]=s[q]*wc[q]+c[q]*ws[q];c[q]=nc}if(dst)dst[a0+i]+=v*(env?env(i):1);else if(Math.abs(v)>pk)pk=Math.abs(v)}return pk}
+function synthesize(cfg,syms,amp){const sr=cfg.sampleRate,lead=Math.round(CH.lead*sr),n=Math.round((CH.lead+cfg.S0+syms.length*cfg.Ts+cfg.R+CH.tail)*sr),out=new Float32Array(n),data=new Float32Array(n);
+ const Lc=Math.round(cfg.Tc*sr),tp=Math.round(CH.taper*sr);
+ for(const [st,up] of [[0,true],[cfg.D,false]]){const a0=lead+Math.round(st*sr);for(let m=0;m<Lc;m++)out[a0+m]=amp*taper(m,Lc,tp)*Math.cos(chirpAt(cfg,m,sr,up))}
+ const Rn=Math.max(1,Math.round(cfg.R*sr)),Ln=Math.round((cfg.Ts+cfg.R)*sr),env=i=>i<Rn?0.5-0.5*Math.cos(Math.PI*i/Rn):(i>=Ln-Rn?0.5-0.5*Math.cos(Math.PI*(Ln-1-i)/Rn):1);
+ let seed=0x9e3779b9;const rnd=()=>(seed=(Math.imul(seed,1664525)+1013904223)>>>0)/4294967296;
+ for(let m=0;m<syms.length;m++){const a0=lead+Math.round((cfg.S0+m*cfg.Ts)*sr),fr=syms[m].map((v,g)=>cfg.freqs[v*cfg.ng+g]);let best=null,bp=Infinity;
+  for(let t=0;t<8;t++){const ph=fr.map(()=>rnd()*2*Math.PI),pk=tones(null,0,Ln,fr,ph,sr,3,null);if(pk<bp){bp=pk;best=ph}}
+  tones(data,a0,Ln,fr,best,sr,1,env)}
+ let pk=0;for(let i=0;i<n;i++){const a=Math.abs(data[i]);if(a>pk)pk=a}const sc=pk>0?amp/pk:0;for(let i=0;i<n;i++)out[i]+=data[i]*sc;return out}
+function sweep(cfg,toneSec,amp){const sr=cfg.sampleRate,L=Math.round(toneSec*sr),tp=Math.round(0.004*sr),out=new Float32Array(cfg.nt*L+Math.round(0.05*sr));for(let k=0;k<cfg.nt;k++){const w=2*Math.PI*cfg.freqs[k]/sr;for(let i=0;i<L;i++)out[k*L+i]=amp*taper(i,L,tp)*Math.sin(w*i)}return out}
+// ---- FFT (radix-2, in place) ----
+function makeFFT(n){const lev=Math.round(Math.log2(n)),rev=new Uint32Array(n),cs=new Float64Array(n/2),sn=new Float64Array(n/2);for(let i=0;i<n;i++){let r=0,x=i;for(let b=0;b<lev;b++){r=(r<<1)|(x&1);x>>=1}rev[i]=r}for(let i=0;i<n/2;i++){cs[i]=Math.cos(2*Math.PI*i/n);sn[i]=Math.sin(2*Math.PI*i/n)}
+ return(re,im,inv)=>{for(let i=0;i<n;i++){const j=rev[i];if(j>i){let t=re[i];re[i]=re[j];re[j]=t;t=im[i];im[i]=im[j];im[j]=t}}
+  for(let size=2;size<=n;size<<=1){const h=size>>1,st=n/size;for(let i=0;i<n;i+=size)for(let j=0,k=0;j<h;j++,k+=st){const c=cs[k],s=inv?sn[k]:-sn[k],a=i+j,b=a+h,tr=re[b]*c-im[b]*s,ti=re[b]*s+im[b]*c;re[b]=re[a]-tr;im[b]=im[a]-ti;re[a]+=tr;im[a]+=ti}}
+  if(inv)for(let i=0;i<n;i++){re[i]/=n;im[i]/=n}}}
+const FFTN=4096,HOP=1024,fft=makeFFT(FFTN);
+function parab(a,mask,p){const y0=a[(p-1)&mask],y1=a[p&mask],y2=a[(p+1)&mask],d=y0-2*y1+y2;return d<0?Math.max(-0.5,Math.min(0.5,0.5*(y0-y2)/d)):0}
 
 class Receiver{
- constructor(cfg){this.cfg=cfg;this.size=1<<20;this.mask=this.size-1;this.buf=new Float32Array(this.size);this.total=0;this.FR=1024;this.frR=new Float32Array(this.FR*NT);this.frJ=new Int32Array(this.FR).fill(-1);this.hopJ=Math.ceil(cfg.W/cfg.h);this.tmp=new Float64Array(cfg.W);this.e=new Float64Array(NT);this.state='hunt';this.muted=false;this.cand=null;this.floor=Infinity;this.act=0;this.lastSum=0;this.lastScore=0;this.peakScore=0;this.onFrame=null;this.onEvent=null;this.onHop=null;this.stats={locks:0,frames:0,headerFail:0,bodyFail:0,crcFail:0,lost:0}}
+ constructor(cfg){const sr=cfg.sampleRate;this.cfg=cfg;this.size=1<<21;this.mask=this.size-1;this.buf=new Float32Array(this.size);this.total=0;this.H=FFTN;
+  this.Lc=Math.round(cfg.Tc*sr);this.Dn=cfg.D*sr;this.W=Math.round(0.004*sr);this.den=((cfg.cLo+cfg.cHi)/cfg.k-cfg.D)*sr;
+  const tp=Math.round(CH.taper*sr),mk=up=>{const re=new Float64Array(FFTN),im=new Float64Array(FFTN);let es=0;for(let m=0;m<this.Lc;m++){const g=taper(m,this.Lc,tp),ph=chirpAt(cfg,m,sr,up);re[m]=g*Math.cos(ph);im[m]=g*Math.sin(ph);es+=g*g}fft(re,im,false);return{re,im,es}};
+  this.tu=mk(true);this.td=mk(false);
+  const lo=cfg.cLo-250,hi=cfg.cHi+250,tw=150;this.k0=Math.max(1,Math.floor((lo-tw)*FFTN/sr));this.k1=Math.min(FFTN/2-1,Math.ceil((hi+tw)*FFTN/sr));this.wm=new Float64Array(FFTN);
+  for(let k=this.k0;k<=this.k1;k++){const f=k*sr/FFTN;let w=1;if(f<lo)w=f<lo-tw?0:0.5+0.5*Math.cos(Math.PI*(lo-f)/tw);else if(f>hi)w=f>hi+tw?0:0.5+0.5*Math.cos(Math.PI*(f-hi)/tw);this.wm[k]=2*w}
+  const A=()=>new Float64Array(FFTN);this.xr=A();this.xi=A();this.ar=A();this.ai=A();this.ur=A();this.ui=A();this.dr=A();this.di=A();this.P=new Float64Array(FFTN+1);
+  this.PR=1<<18;this.pm=this.PR-1;this.su=new Float32Array(this.PR);this.sd=new Float32Array(this.PR);this.scored=0;this.ex=0;this.eps=this.Lc*1e-10;
+  this.Nd=Math.min(cfg.N,Math.round(0.0214*sr));this.coefNom=cfg.freqs.map(f=>2*Math.cos(2*Math.PI*f/sr)); // display window ≈ 21 ms
+  this.state='hunt';this.muted=false;this.cand=null;this.pending=[];this.floor=Infinity;this.level=0;this.act=0;this.lastScore=0;this.peakScore=0;
+  this.onFrame=null;this.onEvent=null;this.onHop=null;this.stats={locks:0,frames:0,rejects:0,trainFail:0,headerFail:0,bodyFail:0,crcFail:0,lost:0}}
  emit(k,i){if(this.onEvent)this.onEvent(k,i||{})}
- push(x){const m=this.mask;for(let i=0;i<x.length;i++)this.buf[(this.total+i)&m]=x[i];this.total+=x.length;while(this.hopJ*this.cfg.h<=this.total){this.hop(this.hopJ);this.hopJ++}if(this.state==='data')this.decode()}
- powers(end,out){const c=this.cfg,W=c.W,win=c.win,b=this.buf,m=this.mask,t=this.tmp,s=end-W;for(let i=0;i<W;i++)t[i]=b[(s+i)&m]*win[i];let sum=0;for(let k=0;k<NT;k++){const cf=c.coeff[k];let s1=0,s2=0;for(let i=0;i<W;i++){const s0=t[i]+cf*s1-s2;s2=s1;s1=s0}const p=s1*s1+s2*s2-cf*s1*s2;out[k]=p>0?p:0;sum+=out[k]}return sum}
- hop(j){const c=this.cfg,sl=j%this.FR,e=this.e,sum=this.powers(j*c.h,e),d=sum+c.eps,o=sl*NT;let mx=0;for(let k=0;k<NT;k++){const r=e[k]/d;this.frR[o+k]=r;if(r>mx)mx=r}this.frJ[sl]=j;this.lastSum=sum;
-  this.floor=sum<this.floor?sum:Math.min(sum,this.floor*1.0006+c.eps*1e-3);
-  this.act=this.act*0.95+((mx>0.3&&sum>this.floor*6+c.eps)?0.05:0);
-  if(this.onHop)this.onHop(this.frR.subarray(o,o+NT),sum,e);
-  if(this.state==='hunt'&&!this.muted)this.detect(j)}
- detect(j){const c=this.cfg,Sh=c.S/c.h;let sc=0;for(let k=0;k<NPRE;k++){const jj=Math.round(j-(NPRE-1-k)*Sh);if(jj<0)return;const sl=jj%this.FR;if(this.frJ[sl]!==jj)return;sc+=this.frR[sl*NT+PRE[k]]}sc/=NPRE;this.lastScore=sc;if(sc>this.peakScore)this.peakScore=sc;
-  if(this.cand){if(sc>this.cand.sc){this.cand.sc=sc;this.cand.j=j}else if(j-this.cand.j>=Math.ceil(Sh*0.6)){const cd=this.cand;this.cand=null;this.lock(cd)}}else if(sc>=TH)this.cand={j,sc}}
- fine(t){const c=this.cfg,e=this.e,tp=new Float64Array(NT);let sc=0,pw=0;for(let k=0;k<NPRE;k++){const sum=this.powers(Math.round(t-(NPRE-1-k)*c.S),e);sc+=e[PRE[k]]/(sum+c.eps);tp[PRE[k]]=e[PRE[k]];pw+=sum}return{t,score:sc/NPRE,tp,pow:pw/NPRE}}
- lock(cd){const c=this.cfg,step=Math.max(1,Math.round(c.h/4));let best=null;for(let d=-c.h;d<=c.h;d+=step){const r=this.fine(cd.j*c.h+d);if(!best||r.score>best.score)best=r}
-  if(best.score<TH*0.85){this.emit('reject',{score:best.score});return}
-  let gm=0;for(let k=0;k<NT;k++)if(best.tp[k]>gm)gm=best.tp[k];this.gain=new Float64Array(NT);for(let k=0;k<NT;k++)this.gain[k]=Math.max(best.tp[k]/(gm||1),0.03);
-  this.t0=best.t;this.prePow=best.pow;this.lockScore=best.score;this.syms=[];this.confs=[];this.weak=0;this.need=0;this.hdr=null;this.state='data';this.stats.locks++;
-  this.emit('lock',{score:best.score,level:10*Math.log10(best.pow/c.ref+1e-12)})}
- abort(reason,stat){this.state='hunt';this.cand=null;if(stat)this.stats[stat]++;this.emit('abort',{reason,syms:this.syms?this.syms.length:0})}
- setMuted(v){this.muted=v;if(v){this.cand=null;if(this.state==='data')this.abort('muted for own transmission')}}
- busy(){return this.state==='data'||!!this.cand||this.act>0.25}
- pack(from,count){const bytes=[],conf=[];for(let i=from;i<from+count;i+=2){bytes.push((this.syms[i]<<4)|this.syms[i+1]);conf.push(Math.min(this.confs[i],this.confs[i+1]))}return{bytes,conf}}
- decode(){const c=this.cfg,e=this.e;while(this.state==='data'){const m=this.syms.length,end=Math.round(this.t0+(m+1)*c.S);if(end>this.total)return;const sum=this.powers(end,e);let b=0,bv=-1,sv=0;for(let k=0;k<NT;k++){const v=e[k]/this.gain[k];if(v>bv){sv=bv<0?0:bv;bv=v;b=k}else if(v>sv)sv=v}
-   this.syms.push(b);this.confs.push(bv/(bv+sv+1e-30));
-   if(sum<this.prePow*0.02){if(++this.weak>=8){this.abort('signal lost','lost');return}}else this.weak=0;
-   if(this.syms.length===HDR_SYMS){const p=this.pack(0,HDR_SYMS),r=rsDecodeSoft(p.bytes,4,p.conf,2);if(!r){this.abort('header uncorrectable','headerFail');return}const t=r.data[0]&15,L=r.data[1];if((r.data[0]>>4)!==MAGIC||!TYPE_NAME[t]||L<7||L>MAX_BODY){this.abort('invalid header','headerFail');return}this.hdr={type:t,L,fixed:r.fixed};this.P=paritySize(L);this.need=HDR_SYMS+2*(L+this.P);this.emit('header',{type:TYPE_NAME[t],L,symbols:this.need})}
-   else if(this.need&&this.syms.length===this.need){const p=this.pack(HDR_SYMS,this.need-HDR_SYMS),r=rsDecodeSoft(p.bytes,this.P,p.conf,this.P-2);if(!r){this.abort('too many symbol errors for Reed-Solomon','bodyFail');return}const body=r.data,L=this.hdr.L,t=this.hdr.type;const crc=(body[L-2]<<8)|body[L-1];if(crc!==crc16([(MAGIC<<4)|t,L].concat(body.slice(0,L-2)))){this.abort('CRC mismatch','crcFail');return}
-    let cs=0;for(const v of this.confs)cs+=v;const f={type:t,typeName:TYPE_NAME[t],src:(body[0]<<8)|body[1],dst:(body[2]<<8)|body[3],seq:body[4],payload:Uint8Array.from(body.slice(5,L-2)),quality:{score:this.lockScore,fixed:this.hdr.fixed+r.fixed,conf:cs/this.confs.length,level:10*Math.log10(this.prePow/c.ref+1e-12)}};
-    this.stats.frames++;this.state='hunt';this.cand=null;this.emit('frame',f);if(this.onFrame)this.onFrame(f);return}}}
+ push(x){const m=this.mask;for(let i=0;i<x.length;i++)this.buf[(this.total+i)&m]=x[i];this.total+=x.length;while(this.total>=this.H){this.block();this.H+=HOP}if(this.state==='data')this.decode()}
+ tonePow(start,N,coef){const b=this.buf,m=this.mask,out=new Float64Array(coef.length);for(let q=0;q<coef.length;q++){const cf=coef[q];let s1=0,s2=0;for(let i=0;i<N;i++){const s0=b[(start+i)&m]+cf*s1-s2;s2=s1;s1=s0}const p=s1*s1+s2*s2-cf*s1*s2;out[q]=p>0?p:0}return out}
+ block(){const n0=this.H-FFTN,b=this.buf,m=this.mask,{xr,xi,ar,ai,ur,ui,dr,di,wm,tu,td}=this;
+  for(let i=0;i<FFTN;i++){xr[i]=b[(n0+i)&m];xi[i]=0}fft(xr,xi,false);ar.fill(0);ai.fill(0);ur.fill(0);ui.fill(0);dr.fill(0);di.fill(0);
+  for(let k=this.k0;k<=this.k1;k++){const w=wm[k];if(!w)continue;const a=xr[k]*w,c=xi[k]*w;ar[k]=a;ai[k]=c;ur[k]=a*tu.re[k]+c*tu.im[k];ui[k]=c*tu.re[k]-a*tu.im[k];dr[k]=a*td.re[k]+c*td.im[k];di[k]=c*td.re[k]-a*td.im[k]}
+  fft(ar,ai,true);fft(ur,ui,true);fft(dr,di,true);const P=this.P;P[0]=0;for(let i=0;i<FFTN;i++)P[i+1]=P[i]+ar[i]*ar[i]+ai[i]*ai[i];
+  const Lc=this.Lc,end=n0+FFTN-Lc;let mx=0;for(let p=this.scored;p<=end;p++){const n=p-n0,E=P[n+Lc]-P[n]+this.eps,s=(ur[n]*ur[n]+ui[n]*ui[n])/(E*tu.es),d=(dr[n]*dr[n]+di[n]*di[n])/(E*td.es);this.su[p&this.pm]=s;this.sd[p&this.pm]=d;if(s>mx)mx=s}
+  this.scored=end+1;this.lastScore=mx;if(mx>this.peakScore)this.peakScore=mx;
+  const lv=(P[FFTN-HOP]-P[FFTN-2*HOP])/HOP;this.level=lv;this.floor=lv<this.floor?lv:Math.min(this.floor*1.003+1e-14,1);this.act=this.act*0.8+(lv>this.floor*10&&lv>1e-10?0.2:0);
+  if(this.onHop){const N=this.Nd,pw=this.tonePow(this.H-N,N,this.coefNom),sc=4/(N*N);for(let q=0;q<pw.length;q++)pw[q]*=sc;this.onHop(pw,lv)}
+  if(this.state==='hunt'&&!this.muted)this.hunt()}
+ hunt(){const Lc=this.Lc;let p=Math.max(this.ex,this.scored-this.PR+8);
+  for(;p<this.scored;p++){const s=this.su[p&this.pm];if(this.cand){if(s>this.cand.s){this.cand.s=s;this.cand.p=p}else if(p-this.cand.p>Lc/4){this.pending.push(this.cand);this.cand=null}}else if(s>=TH)this.cand={p,s}}
+  this.ex=p;
+  while(this.pending.length){const c=this.pending[0],hi=Math.ceil(c.p+this.Dn+this.W);if(hi+2>=this.scored)break;this.pending.shift();let bp=-1,bs=0;
+   for(let q=Math.floor(c.p+this.Dn-this.W);q<=hi;q++){const v=this.sd[q&this.pm];if(v>bs){bs=v;bp=q}}
+   if(bs>=TH*0.6){this.pending=[];this.cand=null;this.lock(c,bp,bs);return}this.stats.rejects++;this.emit('reject',{score:c.s,down:bs})}}
+ lock(c,pd,ds){const cfg=this.cfg,sr=cfg.sampleRate,pu=c.p+parab(this.su,this.pm,c.p),pdd=pd+parab(this.sd,this.pm,pd);
+  let eps=((pdd-pu)-this.Dn)/this.den;eps=Math.max(-1.5e-3,Math.min(1.5e-3,eps));this.alpha=1+eps;this.t0=pu+eps*cfg.cHi/cfg.k*sr;
+  this.coef=cfg.freqs.map(f=>2*Math.cos(2*Math.PI*f*this.alpha/sr));this.m=0;this.trainE=[];this.dib=[];this.conf=[];this.needD=0;this.hdr=null;this.need=0;this.weak=0;this.lockScore=Math.min(c.s,ds);this.ppm=eps*1e6;
+  this.state='data';this.stats.locks++;this.emit('lock',{score:this.lockScore,ppm:this.ppm})}
+ abort(reason,stat){this.state='hunt';this.cand=null;this.pending=[];this.ex=Math.max(this.ex,Math.floor(this.t0||0)+this.Lc);if(stat)this.stats[stat]++;this.emit('abort',{reason,syms:this.m||0})}
+ setMuted(v){if(v===this.muted)return;this.muted=v;if(v){this.cand=null;this.pending=[];if(this.state==='data')this.abort('muted for own transmission')}else this.ex=this.scored}
+ busy(){return this.state==='data'||!!this.cand||this.pending.length>0||this.act>0.25}
+ train(){const cfg=this.cfg,ng=cfg.ng,nt=cfg.nt,T=this.trainE;this.gain=new Float64Array(nt);let ok=0,mxg=0,snr=0;
+  for(let s=0;s<4;s++){let cnt=0;for(let g=0;g<ng;g++){let b=0;for(let v=1;v<4;v++)if(T[s][v*ng+g]>T[s][b*ng+g])b=v;if(b===s)cnt++}if(cnt>=Math.max(1,Math.ceil(0.6*ng)))ok++}
+  if(ok<3){this.abort('training pattern not found (weak or false lock)','trainFail');return false}
+  for(let i=0;i<nt;i++){const v=(i/ng)|0;this.gain[i]=T[v][i];if(T[v][i]>mxg)mxg=T[v][i];let nz=0;for(let s=0;s<4;s++)if(s!==v)nz+=T[s][i];snr+=T[v][i]/(nz/3+1e-30)}
+  let sum=0;for(let i=0;i<nt;i++){this.gain[i]=Math.max(this.gain[i],mxg*0.01);sum+=this.gain[i]}
+  this.trainLevel=sum/nt;this.snr=10*Math.log10(snr/nt);this.levelDb=10*Math.log10(this.trainLevel*4/(cfg.N*cfg.N)+1e-15);this.emit('train',{snr:this.snr,level:this.levelDb});return true}
+ byte(b){let v=0,c=1;for(let j=0;j<4;j++){v=(v<<2)|this.dib[4*b+j];c=Math.min(c,this.conf[4*b+j])}return[v,c]}
+ bytes(a,n){const by=[],cf=[];for(let i=a;i<a+n;i++){const[v,c]=this.byte(i);by.push(v);cf.push(c)}return{by,cf}}
+ decode(){const cfg=this.cfg,ng=cfg.ng,sr=cfg.sampleRate;
+  while(this.state==='data'){const m=this.m,ws=Math.round(this.t0+(cfg.S0+m*cfg.Ts+cfg.off)*sr/this.alpha);if(ws+cfg.N>this.total)return;
+   if(ws<this.total-this.size+cfg.N){this.abort('decoder fell behind','lost');return}
+   const E=this.tonePow(ws,cfg.N,this.coef);this.m++;
+   if(m<4){this.trainE.push(E);if(m===3&&!this.train())return;continue}
+   let raw=0;
+   for(let g=0;g<ng;g++){let b=0,bv=-1,sv=0;for(let v=0;v<4;v++){const i=v*ng+g,x=E[i]/this.gain[i];if(x>bv){sv=Math.max(sv,bv);bv=x;b=v}else if(x>sv)sv=x}this.dib.push(b);this.conf.push(bv/(bv+sv+1e-30));raw+=E[b*ng+g]}
+   if(raw<this.trainLevel*ng*0.03){if(++this.weak>=6){this.abort('signal lost','lost');return}}else this.weak=0;
+   const have=this.dib.length;
+   if(!this.hdr&&have>=4*HDR_BYTES){const{by,cf}=this.bytes(0,HDR_BYTES),r=rsDecodeSoft(by,4,cf,4);if(!r){this.abort('header uncorrectable','headerFail');return}
+    const t=r.data[0]&15,L=r.data[1];if((r.data[0]>>4)!==MAGIC||!TYPE_NAME[t]||L<7||L>MAX_BODY){this.abort('invalid header','headerFail');return}
+    this.hdr={type:t,L,fixed:r.fixed};this.par=paritySize(L);this.needD=4*(HDR_BYTES+L+this.par);const ns=4+Math.ceil(this.needD/ng);this.emit('header',{type:TYPE_NAME[t],L,symbols:ns,seconds:ns*cfg.Ts})}
+   if(this.hdr&&have>=this.needD){const L=this.hdr.L,t=this.hdr.type,{by,cf}=this.bytes(HDR_BYTES,L+this.par),r=rsDecodeSoft(by,this.par,cf,this.par-2);
+    if(!r){this.abort('too many symbol errors for Reed-Solomon','bodyFail');return}const body=r.data,crc=(body[L-2]<<8)|body[L-1];
+    if(crc!==crc16([(MAGIC<<4)|t,L].concat(body.slice(0,L-2)))){this.abort('CRC mismatch','crcFail');return}
+    let cs=0,cn=this.conf.length;for(const v of this.conf)cs+=v;
+    const f={type:t,typeName:TYPE_NAME[t],src:(body[0]<<8)|body[1],dst:(body[2]<<8)|body[3],seq:body[4],payload:Uint8Array.from(body.slice(5,L-2)),
+     quality:{score:this.lockScore,fixed:this.hdr.fixed+r.fixed,conf:cs/cn,level:this.levelDb,snr:this.snr,ppm:this.ppm}};
+    this.stats.frames++;this.state='hunt';this.cand=null;this.pending=[];this.ex=Math.max(this.ex,Math.floor(this.t0)+this.Lc);this.emit('frame',f);if(this.onFrame)this.onFrame(f);return}}}
 }
-return{TYPE,TYPE_NAME,PRE,NT,TH,MAX_BODY,makeConfig,encodeFrame,synthesize,sweep,Receiver,frameDuration,frameSymbols,paritySize,bodyLen,crc16,rsEncode,rsDecode,rsDecodeSoft};
+return{TYPE,TYPE_NAME,TH,MAX_BODY,PRESETS,makeConfig,encodeFrame,synthesize,sweep,Receiver,frameDuration,frameSymbols,paritySize,bodyLen,crc16,rsEncode,rsDecode,rsDecodeSoft};
 })();
 /*MODEM-END*/
 </script>
@@ -141,13 +215,12 @@ return{TYPE,TYPE_NAME,PRE,NT,TH,MAX_BODY,makeConfig,encodeFrame,synthesize,sweep
 <script>
 /*APP-START*/
 (function(){'use strict';
-const VERSION='v9';
+const VERSION='v10';
 const $=id=>document.getElementById(id);
 const T=UM.TYPE,TN=UM.TYPE_NAME,enc=new TextEncoder(),dec=new TextDecoder('utf-8',{fatal:false});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),pad=n=>String(n).padStart(4,'0');
-const TURN=500,MAX_TEXT=180,NAME_BYTES=12;
-const BANDS={near:16800,ultra:18000,audible:1500};
-const SPEEDS={robust:{symMs:80,spacing:80},balanced:{symMs:50,spacing:100},fast:{symMs:32,spacing:125}};
+const TURN=150,MAX_TEXT=180,NAME_BYTES=12;
+const BANDS={b19:[19000,22000],b20:[20000,22000],audible:[2000,5000]};
 const store={get(k,s){try{return(s?sessionStorage:localStorage).getItem(k)}catch(e){return null}},set(k,v,s){try{(s?sessionStorage:localStorage).setItem(k,v)}catch(e){}}};
 const ago=t=>{const s=Math.round((Date.now()-t)/1000);return s<2?'just now':s<120?s+' s ago':Math.round(s/60)+' min ago'};
 
@@ -163,25 +236,26 @@ function log(s,cls){const el=$('packets'),d=document.createElement('div');d.text
 function setDecoder(s,cls){const el=$('decoderStatus');el.textContent='Decoder: '+s;el.className='status small '+(cls||'')}
 
 // ---------- settings ----------
-let settings={base:16800,spacing:100,symMs:50,amp:0.8};
-try{const j=JSON.parse(store.get('um.settings')||'null');if(j)Object.assign(settings,j)}catch(e){}
-{const m=/cfg=(\d+)-(\d+)-(\d+)/.exec(location.hash);if(m)Object.assign(settings,{base:+m[1],spacing:+m[2],symMs:+m[3]})}
-function fillInputs(){$('base').value=settings.base;$('spacing').value=settings.spacing;$('symMs').value=settings.symMs;$('amp').value=settings.amp;$('ampVal').textContent=Math.round(settings.amp*100)+'%';
- $('band').value=Object.keys(BANDS).find(k=>BANDS[k]===settings.base)||'custom';
- $('speed').value=Object.keys(SPEEDS).find(k=>SPEEDS[k].symMs===settings.symMs&&SPEEDS[k].spacing===settings.spacing)||'custom'}
-function validate(s){if(![s.base,s.spacing,s.symMs].every(Number.isFinite))return'Enter numbers for all fields.';const top=s.base+15*s.spacing,sr=ctx?ctx.sampleRate:44100,max=Math.min(20500,Math.floor(sr*0.46));if(s.base<300)return'Lowest tone must be at least 300 Hz.';if(top>max)return'Highest tone '+top+' Hz exceeds '+max+' Hz. Lower the base or spacing.';if(s.symMs<20||s.symMs>200)return'Symbol length must be 20–200 ms.';if(s.spacing<30||s.spacing>400)return'Spacing must be 30–400 Hz.';return''}
-function summary(){const c=UM.makeConfig({sampleRate:ctx?ctx.sampleRate:48000,...settings}),top=settings.base+15*settings.spacing;const beacon=UM.frameDuration(c,UM.bodyLen(nameBytes().length)),big=UM.frameDuration(c,UM.bodyLen(MAX_TEXT));
- let s=`Tones ${(settings.base/1000).toFixed(2)}–${(top/1000).toFixed(2)} kHz · 16 tones ${settings.spacing} Hz apart · ${settings.symMs} ms/symbol · ${Math.round(4000/settings.symMs)} bit/s raw\nBeacon ≈ ${beacon.toFixed(1)} s on air · 180-byte message ≈ ${big.toFixed(1)} s`;
- if(c.binsApart<2.2)s+=`\n⚠ Tones are only ${c.binsApart.toFixed(1)} analysis bins apart; increase spacing or symbol length.`;$('summary').textContent=s}
+let settings={lo:19000,hi:22000,preset:'max',amp:0.75};
+try{const j=JSON.parse(store.get('um.settings.v10')||'null');if(j)Object.assign(settings,j)}catch(e){}
+{const m=/cfg=(\d+)-(\d+)-([a-z]+)/.exec(location.hash);if(m&&UM.PRESETS[m[3]])Object.assign(settings,{lo:+m[1],hi:+m[2],preset:m[3]})}
+const curRate=()=>ctx?ctx.sampleRate:48000;
+function fillInputs(){$('lo').value=settings.lo;$('hi').value=settings.hi;$('preset').value=settings.preset;$('amp').value=settings.amp;$('ampVal').textContent=Math.round(settings.amp*100)+'%';
+ $('band').value=Object.keys(BANDS).find(k=>BANDS[k][0]===settings.lo&&BANDS[k][1]===settings.hi)||'custom'}
+function validate(s){if(![s.lo,s.hi].every(Number.isFinite))return'Enter numbers for both band edges.';const sr=curRate(),max=Math.min(22000,Math.floor(sr*0.46));
+ if(s.lo<300)return'Lowest tone must be at least 300 Hz.';if(s.hi>max)return`Highest tone ${s.hi} Hz exceeds ${max} Hz for a ${sr} Hz audio clock.`;if(s.hi-s.lo<400)return'Band must be at least 400 Hz wide.';
+ if(!UM.PRESETS[s.preset])return'Unknown mode.';if(UM.makeConfig({sampleRate:sr,...s}).ng<1)return'Band is too narrow for this mode.';return''}
+function summary(){const c=UM.makeConfig({sampleRate:curRate(),...settings}),hi=UM.frameDuration(c,UM.bodyLen(2)),ack=UM.frameDuration(c,7),big=UM.frameDuration(c,UM.bodyLen(MAX_TEXT));
+ $('summary').textContent=`${c.nt} tones (${c.ng} groups × 4) from ${(c.freqs[0]/1000).toFixed(2)} to ${(c.freqs[c.nt-1]/1000).toFixed(2)} kHz, ${c.df.toFixed(1)} Hz apart\n${c.symRate.toFixed(1)} symbols/s × ${2*c.ng} bits = ${Math.round(c.bitrate)} bit/s raw (≈ ${Math.round(c.bitrate*0.6)} bit/s after error correction)\n“hi” ≈ ${hi.toFixed(2)} s on air · ACK ≈ ${ack.toFixed(2)} s · 180-byte message ≈ ${big.toFixed(2)} s\nEcho tolerance ≈ ${c.echoMs.toFixed(1)} ms · chirp sync ${(c.cLo/1000).toFixed(1)}→${(c.cHi/1000).toFixed(1)} kHz`}
 function applySettings(s){const err=validate(s),msg=$('settingsMsg');if(err){msg.textContent=err;msg.className='small bad';fillInputs();return false}msg.textContent='';
- const changed=s.base!==settings.base||s.spacing!==settings.spacing||s.symMs!==settings.symMs;settings=s;store.set('um.settings',JSON.stringify(settings));
- try{history.replaceState(null,'','#cfg='+s.base+'-'+s.spacing+'-'+s.symMs)}catch(e){}
- fillInputs();summary();renderQR();if(changed&&audioReady){rebuildModem();log(`Radio settings changed · ${s.base} Hz base, ${s.spacing} Hz spacing, ${s.symMs} ms`,'warn')}return true}
-const readInputs=()=>({base:Math.round(+$('base').value),spacing:Math.round(+$('spacing').value),symMs:Math.round(+$('symMs').value),amp:+$('amp').value});
-$('band').onchange=()=>{const v=$('band').value;if(v!=='custom')applySettings({...settings,base:BANDS[v]})};
-$('speed').onchange=()=>{const v=$('speed').value;if(v!=='custom')applySettings({...settings,...SPEEDS[v]})};
-for(const id of['base','spacing','symMs'])$(id).onchange=()=>applySettings(readInputs());
-$('amp').oninput=()=>{settings.amp=+$('amp').value;$('ampVal').textContent=Math.round(settings.amp*100)+'%';store.set('um.settings',JSON.stringify(settings))};
+ const changed=s.lo!==settings.lo||s.hi!==settings.hi||s.preset!==settings.preset;settings=s;store.set('um.settings.v10',JSON.stringify(settings));
+ try{history.replaceState(null,'','#cfg='+s.lo+'-'+s.hi+'-'+s.preset)}catch(e){}
+ fillInputs();summary();renderQR();if(changed&&audioReady){rebuildModem();log(`Radio settings changed · ${s.lo}–${s.hi} Hz · ${UM.PRESETS[s.preset].name}`,'warn')}return true}
+const readInputs=()=>({...settings,lo:Math.round(+$('lo').value),hi:Math.round(+$('hi').value),preset:$('preset').value});
+$('band').onchange=()=>{const v=$('band').value;if(v!=='custom')applySettings({...settings,lo:BANDS[v][0],hi:BANDS[v][1]})};
+$('preset').onchange=()=>applySettings(readInputs());
+for(const id of['lo','hi'])$(id).onchange=()=>applySettings(readInputs());
+$('amp').oninput=()=>{settings.amp=+$('amp').value;$('ampVal').textContent=Math.round(settings.amp*100)+'%';store.set('um.settings.v10',JSON.stringify(settings))};
 
 // ---------- QR ----------
 function renderQR(){const url=location.href;$('pageUrl').textContent=url;const q=$('qr');q.textContent='';if(window.QRCode)new QRCode(q,{text:url,width:116,height:116,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});else q.textContent='QR library unavailable'}
@@ -189,13 +263,13 @@ $('copyUrl').onclick=()=>navigator.clipboard?.writeText(location.href).then(()=>
 
 // ---------- audio ----------
 let ctx=null,stream=null,micSrc=null,analyser=null,tap=null,outGain=null,rx=null,cfg=null,audioReady=false,enabling=null,tapKind='',wakeLock=null;
-const WORKLET=`class T extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(2048);this.n=0}push(c,len){let o=0;while(o<len){const m=Math.min(len-o,this.b.length-this.n);if(c)this.b.set(c.subarray(o,o+m),this.n);else this.b.fill(0,this.n,this.n+m);this.n+=m;o+=m;if(this.n===this.b.length){this.port.postMessage(this.b,[this.b.buffer]);this.b=new Float32Array(2048);this.n=0}}}process(i){const c=i[0]&&i[0][0];this.push(c||null,c?c.length:128);return true}}registerProcessor('um-tap',T)`;
+const WORKLET=`class T extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(512);this.n=0}push(c,len){let o=0;while(o<len){const m=Math.min(len-o,this.b.length-this.n);if(c)this.b.set(c.subarray(o,o+m),this.n);else this.b.fill(0,this.n,this.n+m);this.n+=m;o+=m;if(this.n===this.b.length){this.port.postMessage(this.b,[this.b.buffer]);this.b=new Float32Array(512);this.n=0}}}process(i){const c=i[0]&&i[0][0];this.push(c||null,c?c.length:128);return true}}registerProcessor('um-tap',T)`;
 function ensureAudio(){if(audioReady)return Promise.resolve(true);if(!enabling)enabling=enableAudio().then(()=>true).catch(e=>{$('audioState').textContent='Audio error: '+e.message;$('audioState').className='grow small bad';log('Audio error: '+e.message,'bad');enabling=null;return false});return enabling}
 async function enableAudio(){
  if(!window.isSecureContext)throw new Error('the microphone needs HTTPS (or localhost).');
  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('this browser has no getUserMedia.');
  try{if(navigator.audioSession)navigator.audioSession.type='play-and-record'}catch(e){}
- const AC=window.AudioContext||window.webkitAudioContext;ctx=ctx||new AC({latencyHint:'interactive'});const resumeP=ctx.resume();
+ const AC=window.AudioContext||window.webkitAudioContext;if(!ctx){try{ctx=new AC({sampleRate:48000,latencyHint:'interactive'})}catch(e){ctx=new AC({latencyHint:'interactive'})}}const resumeP=ctx.resume();
  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1},video:false});
  await resumeP.catch(()=>{});if(ctx.state!=='running')await ctx.resume();
  micSrc=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=8192;analyser.smoothingTimeConstant=0.4;micSrc.connect(analyser);
@@ -205,7 +279,7 @@ async function enableAudio(){
  if(!tap){tap=ctx.createScriptProcessor(4096,1,1);tap.onaudioprocess=e=>onChunk(new Float32Array(e.inputBuffer.getChannelData(0)));tapKind='ScriptProcessor'}
  micSrc.connect(tap);tap.connect(sink);
  ctx.onstatechange=()=>{if(ctx.state!=='running'){$('audioState').textContent='Audio paused by the system ('+ctx.state+'). Tap “Enable” to resume.';$('enableAudio').disabled=false}};
- audioReady=true;if(validate(settings))applySettings({...settings,base:BANDS.near});rebuildModem();
+ audioReady=true;{const err=validate(settings);if(err){log('Settings invalid for this device: '+err+' Falling back to the audible band.','bad');settings={...settings,lo:BANDS.audible[0],hi:BANDS.audible[1]};fillInputs()}}rebuildModem();
  const tr=stream.getAudioTracks()[0],st=tr.getSettings?tr.getSettings():{};
  $('audioState').textContent=`Listening · ${ctx.sampleRate} Hz · ${tapKind} · echoCancel ${st.echoCancellation??'?'} · AGC ${st.autoGainControl??'?'} · noiseSuppr ${st.noiseSuppression??'?'}`;$('audioState').className='grow small good';
  $('enableAudio').textContent='Audio enabled';$('enableAudio').disabled=true;requestWake();summary();renderNearby();updateLink();log(`Audio ready · ${ctx.sampleRate} Hz · ${tapKind} · ID ${pad(myId)} · ${VERSION}`,'good');
@@ -214,21 +288,22 @@ $('enableAudio').onclick=()=>{if(audioReady&&ctx.state!=='running'){ctx.resume()
 async function requestWake(){try{if(navigator.wakeLock&&!document.hidden)wakeLock=await navigator.wakeLock.request('screen')}catch(e){}}
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&audioReady){if(ctx.state!=='running')ctx.resume().catch(()=>{});requestWake()}});
 
-let sweepMax=null,wfQ=[],wfTick=0;
-function rebuildModem(){cfg=UM.makeConfig({sampleRate:ctx.sampleRate,base:settings.base,spacing:settings.spacing,symMs:settings.symMs});rx=new UM.Receiver(cfg);
- rx.onHop=(r,sum,e)=>{if(sweepMax)for(let k=0;k<16;k++)if(e[k]>sweepMax[k])sweepMax[k]=e[k];if(++wfTick%2===0&&wfQ.length<2000)wfQ.push(Float32Array.from(r))};
- rx.onEvent=(k,i)=>{if(k==='lock'){wfQ.push({mark:'#ffd27d'});setDecoder(`preamble locked (match ${i.score.toFixed(2)}, level ${i.level.toFixed(0)} dBFS) · reading header…`,'warn')}
-  else if(k==='header')setDecoder(`header OK · ${i.type} · ${i.symbols} symbols ≈ ${(i.symbols*cfg.symMs/1000).toFixed(1)} s · receiving…`,'warn');
+let sweepMax=null,wfQ=[],wfFloor=null,lastPow=null;
+function rebuildModem(){cfg=UM.makeConfig({sampleRate:ctx.sampleRate,lo:settings.lo,hi:settings.hi,preset:settings.preset});rx=new UM.Receiver(cfg);wfFloor=null;
+ rx.onHop=(pw)=>{lastPow=pw;if(sweepMax)for(let k=0;k<pw.length;k++)if(pw[k]>sweepMax[k])sweepMax[k]=pw[k];if(wfQ.length<2000)wfQ.push(Float32Array.from(pw))};
+ rx.onEvent=(k,i)=>{if(k==='lock'){wfQ.push({mark:'#ffd27d'});setDecoder(`chirp locked (match ${i.score.toFixed(2)}, clock/Doppler ${i.ppm>=0?'+':''}${i.ppm.toFixed(0)} ppm) · training…`,'warn')}
+  else if(k==='train')setDecoder(`training OK · tone SNR ${i.snr.toFixed(0)} dB · level ${i.level.toFixed(0)} dBFS · reading header…`,'warn');
+  else if(k==='header')setDecoder(`header OK · ${i.type} · ${i.symbols} symbols ≈ ${i.seconds.toFixed(2)} s · receiving…`,'warn');
   else if(k==='abort'){wfQ.push({mark:'#ff8d8d'});setDecoder('frame dropped: '+i.reason+' · hunting','bad');if(!/muted/.test(i.reason))log('RX frame dropped after '+i.syms+' symbols: '+i.reason,'bad')}
   else if(k==='frame'){wfQ.push({mark:'#7de0a5'});setDecoder(`frame OK · ${i.typeName} from ${pad(i.src)} · ${i.quality.fixed} byte(s) corrected · hunting`,'good')}};
- rx.onFrame=handleFrame;if(txActive&&!loopbackOn())rx.setMuted(true);setDecoder('hunting for preamble')}
+ rx.onFrame=handleFrame;if(txActive&&!loopbackOn())rx.setMuted(true);setDecoder('hunting for chirp preamble')}
 
 // ---------- transmit queue (half-duplex, listen-before-talk) ----------
 let txActive=false,unmuteTimer=0,curSource=null,curSpec=null,selfTestActive=false;const q=[];let qRunning=false;
 const loopbackOn=()=>$('loopback').checked||selfTestActive;
 function playSamples(samples){return new Promise(resolve=>{const b=ctx.createBuffer(1,samples.length,ctx.sampleRate);if(b.copyToChannel)b.copyToChannel(samples,0);else b.getChannelData(0).set(samples);const s=ctx.createBufferSource();s.buffer=b;s.connect(outGain);
  txActive=true;clearTimeout(unmuteTimer);if(rx&&!loopbackOn())rx.setMuted(true);updateLink();let done=false;
- const fin=()=>{if(done)return;done=true;txActive=false;curSource=null;const hold=250+1000*((ctx.outputLatency||0)+(ctx.baseLatency||0));unmuteTimer=setTimeout(()=>{if(!txActive&&rx)rx.setMuted(false)},hold);updateLink();resolve()};
+ const fin=()=>{if(done)return;done=true;txActive=false;curSource=null;const hold=120+1000*((ctx.outputLatency||0)+(ctx.baseLatency||0));unmuteTimer=setTimeout(()=>{if(!txActive&&rx)rx.setMuted(false)},hold);updateLink();resolve()};
  s.onended=fin;setTimeout(fin,samples.length/ctx.sampleRate*1000+2000);curSource=s;s.start()})}
 // priority: 2 = replies (ACK/PAIR_ACK/PONG), 1 = requests and messages, 0 = beacons
 let qOrder=0,quietUntil=0;
@@ -236,21 +311,21 @@ const isBeacon=it=>!!(it.spec&&it.spec.type===T.BEACON);
 function enqueue(item,opt){opt=opt||{};return new Promise(res=>{const it={...item,res,order:qOrder++,notBefore:performance.now()+(opt.delay||0),prio:opt.priority?2:isBeacon(item)?0:1};q.push(it);pump()})}
 async function pump(){if(qRunning)return;qRunning=true;try{while(q.length){
   // listen before talk, then pick the most urgent item (so a reply never waits behind a beacon)
-  const t0=performance.now();while(rx&&rx.busy()&&!loopbackOn()&&performance.now()-t0<7000)await sleep(150+Math.random()*350);
+  const t0=performance.now();while(rx&&rx.busy()&&!loopbackOn()&&performance.now()-t0<7000)await sleep(40+Math.random()*80);
   let bi=0;for(let i=1;i<q.length;i++)if(q[i].prio>q[bi].prio||(q[i].prio===q[bi].prio&&q[i].order<q[bi].order))bi=i;
   const it=q[bi],wait=it.notBefore-performance.now();if(wait>0){await sleep(Math.min(wait,100));continue}
   q.splice(bi,1);
   if(!audioReady||(isBeacon(it)&&performance.now()<quietUntil)){it.res();continue}
   try{if(it.raw)await playSamples(it.raw);else await transmit(it.spec)}catch(e){log('TX error: '+e.message,'bad')}it.res()}}finally{qRunning=false}}
-async function transmit(spec){const f={src:myId,dst:0,seq:0,payload:[],...spec},syms=UM.encodeFrame(f),samples=UM.synthesize(cfg,syms,settings.amp);curSpec=f;
- log(`TX ${TN[f.type]}${f.dst?' → '+pad(f.dst):' (broadcast)'} · seq ${f.seq} · ${syms.length} symbols · ${(samples.length/ctx.sampleRate).toFixed(1)} s`,'tx');await playSamples(samples);curSpec=null}
+async function transmit(spec){const f={src:myId,dst:0,seq:0,payload:[],...spec},syms=UM.encodeFrame(cfg,f),samples=UM.synthesize(cfg,syms,settings.amp);curSpec=f;
+ log(`TX ${TN[f.type]}${f.dst?' → '+pad(f.dst):' (broadcast)'} · seq ${f.seq} · ${syms.length} symbols · ${(samples.length/ctx.sampleRate).toFixed(2)} s`,'tx');await playSamples(samples);curSpec=null}
 const send=(spec,opt)=>enqueue({spec},opt);
 const waiters=new Set();
 // keeps waiting (up to 15 s extra) while a frame is still arriving or we are on air
 function waitFor(pred,ms){return new Promise(res=>{const w={pred,res},limit=performance.now()+ms+15000;const arm=d=>{w.timer=setTimeout(()=>{if((txActive||(rx&&(rx.state==='data'||rx.busy())))&&performance.now()<limit){arm(700);return}waiters.delete(w);res(null)},d)};arm(ms);waiters.add(w)})}
-const replyTimeout=L=>UM.frameDuration(cfg,L)*1000+TURN+3500;
+const replyTimeout=L=>UM.frameDuration(cfg,L)*1000+TURN+1500;
 let exchanges=0;
-async function sendWithRetry(spec,match,replyL,tries,onAttempt){exchanges++;try{for(let a=1;a<=tries;a++){if(onAttempt)onAttempt(a);await send(spec);const r=await waitFor(match,replyTimeout(replyL));if(r)return r;if(a<tries){log(`No reply to ${TN[spec.type]} (attempt ${a}/${tries}) · retrying`,'warn');await sleep(300+Math.random()*900)}}return null}finally{exchanges--;quietUntil=performance.now()+6000}}
+async function sendWithRetry(spec,match,replyL,tries,onAttempt){exchanges++;try{for(let a=1;a<=tries;a++){if(onAttempt)onAttempt(a);await send(spec);const r=await waitFor(match,replyTimeout(replyL));if(r)return r;if(a<tries){log(`No reply to ${TN[spec.type]} (attempt ${a}/${tries}) · retrying`,'warn');await sleep(200+Math.random()*600)}}return null}finally{exchanges--;quietUntil=performance.now()+3000}}
 
 // ---------- protocol ----------
 const peers=new Map(),seenMsgs=new Map();let peerId=null,pairing=null,seqCounter=Math.floor(Math.random()*256),sending=false,broadcasting=false,beaconTimer=0;
@@ -258,13 +333,13 @@ const nextSeq=()=>(seqCounter=(seqCounter+1)&255);
 function touchPeer(id,score){let p=peers.get(id);if(!p){p={id,name:'Device '+pad(id),seen:0,paired:false,score:0};peers.set(id,p);log('Discovered device '+pad(id),'good')}p.seen=Date.now();p.score=score;return p}
 function handleFrame(f){
  for(const w of[...waiters])if(w.pred(f)){clearTimeout(w.timer);waiters.delete(w);w.res(f)}
- const qs=`match ${f.quality.score.toFixed(2)} · ${f.quality.fixed} fixed · ${f.quality.level.toFixed(0)} dBFS`;
+ const qs=`match ${f.quality.score.toFixed(2)} · SNR ${f.quality.snr.toFixed(0)} dB · ${f.quality.fixed} fixed · ${f.quality.ppm>=0?'+':''}${f.quality.ppm.toFixed(0)} ppm`;
  if(f.src===myId){log(`LOOPBACK ✓ decoded own ${f.typeName} · ${qs}`,'good');return}
  const p=touchPeer(f.src,f.quality.score);
  if(f.type===T.BEACON||f.type===T.PAIR_REQ||f.type===T.PAIR_ACK){const n=dec.decode(f.payload).trim();if(n)p.name=n}
  log(`RX ${f.typeName} from ${p.name} [${pad(f.src)}]${f.dst?' → '+pad(f.dst):''} · seq ${f.seq} · ${qs}`,'good');
  if(f.dst!==0&&f.dst!==myId){renderNearby();return}
- if(f.dst===myId)quietUntil=performance.now()+8000; // hold beacons while a conversation is going on
+ if(f.dst===myId)quietUntil=performance.now()+4000; // hold beacons while a conversation is going on
  switch(f.type){
   case T.PAIR_REQ:if(peerId!==f.src)markPaired(f.src,'incoming');send({type:T.PAIR_ACK,dst:f.src,seq:f.seq,payload:nameBytes()},{priority:true,delay:TURN});break;
   case T.PAIR_ACK:if(pairing!==f.src&&peerId!==f.src)markPaired(f.src,'incoming');break; // late ACK after our retries gave up
@@ -280,8 +355,8 @@ async function requestPair(id){if(!(await ensureAudio())||pairing!==null)return;
  pairing=null;if(r)markPaired(id);else log(`Pairing with ${pad(id)} failed: no PAIR_ACK after 3 attempts. Move closer or raise volume.`,'bad');renderNearby();updateLink()}
 function unpair(){$('sendState').className='status';peerId=null;for(const p of peers.values())p.paired=false;log('Unpaired','warn');renderNearby();updateLink()}
 function beaconSpec(){return{type:T.BEACON,dst:0,seq:nextSeq(),payload:nameBytes()}}
-function scheduleBeacon(first){clearTimeout(beaconTimer);if(!broadcasting)return;beaconTimer=setTimeout(async()=>{if(!broadcasting)return;if(!q.length&&!exchanges)await send(beaconSpec());scheduleBeacon(false)},first?150:4000+Math.random()*5000)}
-$('start').onclick=async()=>{if(!(await ensureAudio()))return;broadcasting=true;$('start').disabled=true;$('stop').disabled=false;log('Broadcasting started · beacon every ~4–9 s','good');scheduleBeacon(true);updateLink()};
+function scheduleBeacon(first){clearTimeout(beaconTimer);if(!broadcasting)return;beaconTimer=setTimeout(async()=>{if(!broadcasting)return;if(!q.length&&!exchanges)await send(beaconSpec());scheduleBeacon(false)},first?150:2500+Math.random()*2500)}
+$('start').onclick=async()=>{if(!(await ensureAudio()))return;broadcasting=true;$('start').disabled=true;$('stop').disabled=false;log('Broadcasting started · beacon every ~2.5–5 s','good');scheduleBeacon(true);updateLink()};
 $('stop').onclick=()=>{broadcasting=false;clearTimeout(beaconTimer);for(let i=q.length-1;i>=0;i--)if(q[i].spec&&q[i].spec.type===T.BEACON){q[i].res();q.splice(i,1)}if(curSpec&&curSpec.type===T.BEACON&&curSource)try{curSource.stop()}catch(e){}$('start').disabled=false;$('stop').disabled=true;log('Broadcasting stopped · still listening','warn');updateLink()};
 $('ping').onclick=async()=>{if(!peerId)return;const to=peerId,seq=nextSeq();$('ping').disabled=true;const r=await sendWithRetry({type:T.PING,dst:to,seq},f=>f.type===T.PONG&&f.src===to&&f.seq===seq,7,1);log(r?`PONG from ${pad(to)} ✓ link works both ways`:`No PONG from ${pad(to)}`,r?'good':'bad');updateLink()};
 
@@ -291,17 +366,20 @@ const updateCount=()=>{const n=enc.encode($('compose').value).length;$('charCoun
 $('compose').oninput=updateCount;
 $('sendMsg').onclick=async()=>{const text=$('compose').value.trim(),bytes=enc.encode(text);if(!text||!peerId||sending)return;if(bytes.length>MAX_TEXT){$('sendState').textContent='Message is '+bytes.length+' bytes; the limit is '+MAX_TEXT+'.';return}
  const to=peerId,seq=nextSeq(),dur=UM.frameDuration(cfg,UM.bodyLen(bytes.length));sending=true;updateLink();$('compose').value='';updateCount();const setSt=addMessage(text,'me','queued');
- const r=await sendWithRetry({type:T.MSG,dst:to,seq,payload:bytes},f=>f.type===T.ACK&&f.src===to&&f.seq===seq,7,3,a=>{setSt(`sending, attempt ${a}/3`);$('sendState').textContent=`Transmitting (attempt ${a}/3) · ≈ ${dur.toFixed(1)} s on air, then waiting for ACK…`});
+ const r=await sendWithRetry({type:T.MSG,dst:to,seq,payload:bytes},f=>f.type===T.ACK&&f.src===to&&f.seq===seq,7,3,a=>{setSt(`sending, attempt ${a}/3`);$('sendState').textContent=`Transmitting (attempt ${a}/3) · ≈ ${dur.toFixed(2)} s on air, then waiting for ACK…`});
  sending=false;setSt(r?'delivered ✓':'not acknowledged ✗');$('sendState').textContent=r?'Delivered ✓ (ACK received)':'No ACK after 3 attempts. The peer may have missed it; try again closer.';updateLink()};
 
 // ---------- self-test & sweep ----------
 $('selfTest').onclick=async()=>{if(!(await ensureAudio()))return;const seq=nextSeq(),spec={type:T.PING,dst:0,seq,payload:enc.encode('SELFTEST')};selfTestActive=true;rx.setMuted(false);$('selfTest').disabled=true;$('testResult').textContent='Transmitting a test frame and decoding it with this device’s microphone…';$('testResult').className='status small warn';
- const wait=waitFor(f=>f.src===myId&&f.type===T.PING&&f.seq===seq,UM.frameDuration(cfg,UM.bodyLen(8))*1000+9000);await send(spec);const f=await wait;selfTestActive=false;$('selfTest').disabled=false;
- if(f){$('testResult').textContent=`Self-test PASSED · preamble match ${f.quality.score.toFixed(2)} · ${f.quality.fixed} byte(s) corrected · level ${f.quality.level.toFixed(0)} dBFS · symbol confidence ${(f.quality.conf*100).toFixed(0)}%`;$('testResult').className='status small good'}
- else{$('testResult').textContent='Self-test FAILED · this device could not decode its own transmission. Check the waterfall and decoder status. Raise volume, or try the Near-ultrasonic or Audible band.';$('testResult').className='status small bad'}};
-$('sweep').onclick=async()=>{if(!(await ensureAudio()))return;$('sweep').disabled=true;$('testResult').textContent='Playing the 16 tones (≈ 4 s)…';$('testResult').className='status small warn';const floor=rx.floor/16;sweepMax=new Float64Array(16);await enqueue({raw:UM.sweep(cfg,0.25,settings.amp)});await sleep(500);const m=sweepMax;sweepMax=null;$('sweep').disabled=false;
- const best=Math.max(...m),db=v=>10*Math.log10(v/cfg.ref+1e-12),rel=Array.from(m,v=>Math.round(10*Math.log10((v+1e-30)/best)));const snr=db(best)-db(floor);const weak=rel.map((v,i)=>v<-15?i:-1).filter(i=>i>=0);
- $('testResult').textContent=`Own-mic tone response (dB relative to the strongest tone):\n${rel.map((v,i)=>i+':'+v).join('  ')}\nStrongest ${db(best).toFixed(0)} dBFS · ≈ ${snr.toFixed(0)} dB above the noise floor`+(weak.length?`\n⚠ Weak tones: ${weak.join(', ')} (hardware roll-off; try a lower band)`:'')+(snr<15?'\n⚠ Very weak: raise volume or use a lower band.':'');$('testResult').className='status small '+(snr<15||weak.length>4?'warn':'good')};
+ const wait=waitFor(f=>f.src===myId&&f.type===T.PING&&f.seq===seq,UM.frameDuration(cfg,UM.bodyLen(8))*1000+4000);await send(spec);const f=await wait;selfTestActive=false;$('selfTest').disabled=false;
+ if(f){$('testResult').textContent=`Self-test PASSED · chirp match ${f.quality.score.toFixed(2)} · tone SNR ${f.quality.snr.toFixed(0)} dB · ${f.quality.fixed} byte(s) corrected · level ${f.quality.level.toFixed(0)} dBFS · symbol confidence ${(f.quality.conf*100).toFixed(0)}%`;$('testResult').className='status small good'}
+ else{$('testResult').textContent='Self-test FAILED · this device could not decode its own transmission. Check the waterfall and decoder status. Raise media volume, try Long range mode, or try the Audible band to check the rest of the pipeline.';$('testResult').className='status small bad'}};
+$('sweep').onclick=async()=>{if(!(await ensureAudio()))return;const n=cfg.nt,dt=0.07;$('sweep').disabled=true;$('testResult').textContent=`Playing ${n} tones one at a time (≈ ${(n*dt).toFixed(1)} s)…`;$('testResult').className='status small warn';
+ const noise=lastPow?Float64Array.from(lastPow):new Float64Array(n);sweepMax=new Float64Array(n);selfTestActive=true;rx.setMuted(false);await enqueue({raw:UM.sweep(cfg,dt,settings.amp)});await sleep(400);selfTestActive=false;const m=sweepMax;sweepMax=null;$('sweep').disabled=false;
+ const db=v=>10*Math.log10(v+1e-15),best=Math.max(...m),rel=Array.from(m,v=>db(v)-db(best)),snr=Array.from(m,(v,i)=>db(v)-db(noise[i]));
+ const third=Math.ceil(n/3),seg=a=>{const r=rel.slice(a,a+third);return r.length?(r.reduce((x,y)=>x+y,0)/r.length).toFixed(0):'–'};const weak=rel.map((v,i)=>v<-20?i:-1).filter(i=>i>=0),medSnr=snr.slice().sort((a,b)=>a-b)[n>>1];
+ $('testResult').textContent=`Own-mic tone response (dB vs strongest), low / mid / high third of the band: ${seg(0)} / ${seg(third)} / ${seg(2*third)} dB\nStrongest ${db(best).toFixed(0)} dBFS · median tone ≈ ${medSnr.toFixed(0)} dB above the noise floor`+(weak.length?`\n⚠ ${weak.length} weak tone(s) (>20 dB down): ${weak.slice(0,20).map(i=>(cfg.freqs[i]/1000).toFixed(2)).join(', ')}${weak.length>20?' …':''} kHz`:'')+(medSnr<15?'\n⚠ Weak overall: raise volume, move closer, or use Long range.':'');
+ $('testResult').className='status small '+(medSnr<15||weak.length>n/8?'warn':'good')};
 
 // ---------- UI rendering ----------
 function renderNearby(){const box=$('nearby');box.textContent='';const now=Date.now(),list=[...peers.values()].filter(p=>p.paired||now-p.seen<120000).sort((a,b)=>b.seen-a.seen);
@@ -312,15 +390,17 @@ function updateLink(){let s,d='',dot='';if(!audioReady){s='Audio off'}else if(pe
  if(txActive)d+=' · transmitting…';$('linkState').textContent=s;$('peer').textContent=d;$('dot').className='dot '+dot;$('sendMsg').disabled=!audioReady||!peerId||sending;$('ping').disabled=!audioReady||!peerId;if(!peerId&&!sending)$('sendState').textContent='Pair with a nearby device first.';else if(peerId&&!sending&&/Pair with/.test($('sendState').textContent))$('sendState').textContent='Ready to send to '+(peers.get(peerId)?.name||pad(peerId))+'.'}
 let specBins=null,lastStats=0,peakShown=0;
 function drawSpectrum(){const c=$('spectrum'),g=c.getContext('2d'),w=c.width,h=c.height;if(!specBins||specBins.length!==analyser.frequencyBinCount)specBins=new Float32Array(analyser.frequencyBinCount);analyser.getFloatFrequencyData(specBins);
- const binHz=ctx.sampleRate/analyser.fftSize,top=settings.base+15*settings.spacing,lo=Math.max(0,settings.base-1000),hi=Math.min(ctx.sampleRate/2,top+1000),y=db=>h-(Math.max(-120,Math.min(-10,db))+120)/110*h;
+ const binHz=ctx.sampleRate/analyser.fftSize,lo=Math.max(0,cfg.lo-800),hi=Math.min(ctx.sampleRate/2,cfg.hi+800),y=db=>h-(Math.max(-120,Math.min(-10,db))+120)/110*h;
  g.fillStyle='#0b111b';g.fillRect(0,0,w,h);g.strokeStyle='#26344a';g.fillStyle='#6f7f99';g.font='11px system-ui';for(let d=-100;d<=-20;d+=20){g.beginPath();g.moveTo(0,y(d));g.lineTo(w,y(d));g.stroke();g.fillText(d+' dB',w-44,y(d)-2)}
- g.strokeStyle='#3f5070';g.setLineDash([3,4]);for(const f of cfg.freqs){const x=(f-lo)/(hi-lo)*w;g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}g.setLineDash([]);
+ g.strokeStyle='#2c3a52';g.setLineDash([2,6]);for(const f of cfg.freqs){const x=(f-lo)/(hi-lo)*w;g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}g.setLineDash([]);
  g.beginPath();g.strokeStyle='#9eb2ff';g.lineWidth=1.5;for(let x=0;x<w;x++){const i0=Math.floor((lo+x/w*(hi-lo))/binHz),i1=Math.max(i0+1,Math.ceil((lo+(x+1)/w*(hi-lo))/binHz));let v=-200;for(let i=i0;i<i1&&i<specBins.length;i++)if(specBins[i]>v)v=specBins[i];x?g.lineTo(x,y(v)):g.moveTo(x,y(v))}g.stroke();
  g.fillStyle='#dce5f5';g.fillText((lo/1000).toFixed(1)+' kHz',3,h-4);g.fillText((hi/1000).toFixed(1)+' kHz',w-60,h-4)}
-function drawWaterfall(){const c=$('waterfall'),g=c.getContext('2d'),w=c.width,h=c.height,rh=h/16;let n=wfQ.length;if(!n)return;if(n>w){wfQ.splice(0,n-w);n=w}g.drawImage(c,n,0,w-n,h,0,0,w-n,h);
- for(let i=0;i<n;i++){const it=wfQ[i],x=w-n+i;if(it.mark){g.fillStyle=it.mark;g.fillRect(x,0,2,h);continue}for(let k=0;k<16;k++){const v=Math.min(1,it[k]*1.5);g.fillStyle=`rgb(${v*130|0},${v*210|0},${(25+v*230)|0})`;g.fillRect(x,h-(k+1)*rh,1,rh)}}wfQ.length=0}
-function renderStats(){const s=rx.stats,db=p=>(10*Math.log10(p/cfg.ref+1e-12)).toFixed(0);peakShown=Math.max(peakShown*0.85,rx.peakScore);rx.peakScore=0;
- $('stats').textContent=`State: ${rx.state==='data'?'receiving a frame':rx.muted?'muted while transmitting':'hunting for preamble'}${txActive?' · TX on air':''}\nIn-band level ${db(rx.lastSum)} dBFS · noise floor ${db(rx.floor)} dBFS\nPreamble match now ${rx.lastScore.toFixed(2)} · recent peak ${peakShown.toFixed(2)} · lock at ≥ ${UM.TH.toFixed(2)} (noise ≈ 0.06–0.15)\nFrames OK ${s.frames} · locks ${s.locks} · header fails ${s.headerFail} · RS fails ${s.bodyFail} · CRC fails ${s.crcFail} · signal lost ${s.lost}`}
+function drawWaterfall(){const c=$('waterfall'),g=c.getContext('2d'),w=c.width,h=c.height,nt=cfg.nt,rh=h/nt;let n=wfQ.length;if(!n)return;if(n>w){wfQ.splice(0,n-w);n=w}g.drawImage(c,n,0,w-n,h,0,0,w-n,h);
+ if(!wfFloor||wfFloor.length!==nt)wfFloor=new Float32Array(nt).fill(-200);
+ for(let i=0;i<n;i++){const it=wfQ[i],x=w-n+i;if(it.mark){g.fillStyle=it.mark;g.fillRect(x,0,2,h);continue}
+  for(let k=0;k<nt;k++){const d=10*Math.log10(it[k]+1e-15);wfFloor[k]=wfFloor[k]<-150?d:Math.min(d,wfFloor[k]+0.05);const v=Math.max(0,Math.min(1,(d-wfFloor[k]-3)/27));g.fillStyle=`rgb(${v*130|0},${v*210|0},${(25+v*230)|0})`;g.fillRect(x,h-(k+1)*rh,1,Math.ceil(rh))}}wfQ.length=0}
+function renderStats(){const s=rx.stats,db=p=>(10*Math.log10(p+1e-15)).toFixed(0);peakShown=Math.max(peakShown*0.85,rx.peakScore);rx.peakScore=0;
+ $('stats').textContent=`State: ${rx.state==='data'?'receiving a frame':rx.muted?'muted while transmitting':'hunting for chirp preamble'}${txActive?' · TX on air':''} · ${cfg.nt} tones · ${UM.PRESETS[cfg.preset].name}\nIn-band level ${db(rx.level)} dBFS · noise floor ${db(rx.floor)} dBFS\nChirp match now ${rx.lastScore.toFixed(2)} · recent peak ${peakShown.toFixed(2)} · lock at ≥ ${UM.TH.toFixed(2)} (noise ≈ 0.01–0.07)\nFrames OK ${s.frames} · locks ${s.locks} · no down-chirp ${s.rejects} · training fails ${s.trainFail} · header fails ${s.headerFail} · RS fails ${s.bodyFail} · CRC fails ${s.crcFail} · signal lost ${s.lost}`}
 function draw(){requestAnimationFrame(draw);if(!audioReady||!cfg)return;drawSpectrum();drawWaterfall();if(performance.now()-lastStats>250){lastStats=performance.now();renderStats()}}
 setInterval(()=>{renderNearby();updateLink()},3000);
 
