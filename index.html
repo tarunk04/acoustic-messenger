@@ -1,226 +1,320 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ultrasonic Messenger — Link Lab v7</title>
+<title>Ultrasonic Messenger — Link Lab v8</title>
 <style>
 :root{color-scheme:dark;--bg:#0d1119;--panel:#171f2d;--line:#344258;--fg:#eef3ff;--muted:#9eacc3;--accent:#a9b8ff;--green:#7de0a5;--amber:#ffd27d;--red:#ff8d8d}
-*{box-sizing:border-box}body{margin:auto;max-width:1000px;padding:18px;background:var(--bg);color:var(--fg);font:14px system-ui}h1{font-size:23px;margin:0}h2{font-size:16px;margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:120px}.status{padding:10px;border:1px solid var(--line);background:#0e1521;border-radius:9px;margin-top:9px;white-space:pre-wrap;overflow-wrap:anywhere}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#65738a;margin-right:6px}.dot.on{background:var(--green);box-shadow:0 0 10px #7de0a577}.dot.wait{background:var(--amber)}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}input,select,textarea{width:100%;background:#0e1521;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}textarea{min-height:70px;resize:vertical}button{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}button.secondary{background:#344158;color:var(--fg)}button.danger{background:#633b48;color:white}button:disabled{opacity:.4;cursor:not-allowed}.log{height:170px;overflow:auto;font:12px ui-monospace,monospace;white-space:pre-wrap;background:#0e1521;border:1px solid var(--line);border-radius:9px;padding:9px}.messages{height:210px;overflow:auto;display:flex;flex-direction:column;gap:7px}.bubble{max-width:95%;padding:9px 11px;border-radius:11px;background:#26334a;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.me{align-self:flex-end;background:#303b61}.bubble .meta{font-size:10px;color:#b4c0d5;margin-bottom:4px}.pill{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:20px;color:var(--muted)}progress{width:100%}
+*{box-sizing:border-box}body{margin:auto;max-width:1000px;padding:18px;background:var(--bg);color:var(--fg);font:14px system-ui}h1{font-size:23px;margin:0}h2{font-size:16px;margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:120px}.status{padding:10px;border:1px solid var(--line);background:#0e1521;border-radius:9px;margin-top:9px;white-space:pre-wrap;overflow-wrap:anywhere}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#65738a;margin-right:6px}.dot.on{background:var(--green);box-shadow:0 0 10px #7de0a577}.dot.wait{background:var(--amber)}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}input,select,textarea{width:100%;background:#0e1521;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}textarea{min-height:70px;resize:vertical}button{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}button.secondary{background:#344158;color:var(--fg)}button.danger{background:#633b48;color:white}button:disabled{opacity:.4;cursor:not-allowed}.log{height:200px;overflow:auto;font:12px ui-monospace,monospace;background:#0e1521;border:1px solid var(--line);border-radius:9px;padding:9px}.log div{white-space:pre-wrap;overflow-wrap:anywhere}.messages{height:210px;overflow:auto;display:flex;flex-direction:column;gap:7px}.bubble{max-width:95%;padding:9px 11px;border-radius:11px;background:#26334a;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.me{align-self:flex-end;background:#303b61}.bubble .meta{font-size:10px;color:#b4c0d5;margin-bottom:4px}.pill{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:20px;color:var(--muted)}
+.good{color:var(--green)}.warn{color:var(--amber)}.bad{color:var(--red)}.tx{color:var(--accent)}
+canvas{display:block;width:100%;background:#0b111b;border:1px solid var(--line);border-radius:9px}
+.check{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--fg)}.check input{width:auto}
+ul.tips{margin:6px 0 0 18px;padding:0;color:var(--muted);font-size:12px;line-height:1.55}
 </style></head><body>
-<h1>Ultrasonic Messenger <span class="pill">Link Lab v7</span></h1>
-<p class="muted">Independent acoustic broadcasting, always-on listening, nearby-device discovery and targeted pairing. No server or network transport is used for acoustic messages.</p>
-<section class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Open this app on another device</h2><span class="pill">QR from current URL</span></div><div class="row" style="margin-top:10px;align-items:center"><div id="qr" style="background:white;padding:8px;border-radius:8px;min-width:132px;min-height:132px;display:grid;place-items:center;color:#111">Loading QR…</div><div class="grow"><div class="small">QR encodes the exact page URL in this browser address bar. Deploy once, then scan this URL on the other phone.</div><div id="pageUrl" class="status" style="word-break:break-all"></div><button id="copyUrl" class="secondary">Copy page link</button></div></div></section>
+<h1>Ultrasonic Messenger <span class="pill">Link Lab v8</span></h1>
+<p class="muted">Speaker-to-microphone messaging between nearby devices: 16-tone FSK, Costas-array preamble sync, Reed–Solomon error correction, CRC and acknowledged delivery with retries. No server or network carries the messages.</p>
+
+<section class="card" style="margin-top:12px"><div class="row"><button id="enableAudio">Enable microphone &amp; speaker</button><div class="grow small" id="audioState">Audio is off. Tap the button (browsers require a tap before audio can start). HTTPS is required.</div></div></section>
+
+<section class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Open this app on another device</h2><span class="pill">QR includes radio settings</span></div><div class="row" style="margin-top:10px;align-items:center"><div id="qr" style="background:white;padding:8px;border-radius:8px;min-width:132px;min-height:132px;display:grid;place-items:center;color:#111">Loading QR…</div><div class="grow"><div class="small">Scan this on the other phone. The link carries the current band, spacing and symbol length so both devices match.</div><div id="pageUrl" class="status" style="word-break:break-all"></div><button id="copyUrl" class="secondary">Copy page link</button></div></div></section>
+
 <div class="grid">
 <section class="card">
-<h2>Device identity & link</h2>
-<div class="status" style="margin:8px 0"><span class="small">YOUR 4-DIGIT DEVICE ID</span><div id="deviceId" style="font-size:30px;font-weight:800;letter-spacing:5px">----</div><span class="small">Generated on this page load; included in acoustic broadcasts.</span></div>
-<label>Your device name</label><input id="deviceName" maxlength="20" value="Phone A">
-<div class="row" style="margin-top:10px"><button id="start">Start broadcasting</button><button id="stop" class="danger" disabled>Stop</button></div>
-<div class="status" style="margin-top:10px"><b>Nearby devices</b><div class="small">Incoming broadcasts appear here even when your own broadcasting is OFF. Pair sends a one-time handshake without enabling your beacon.</div><div id="nearby"><span class="small">No devices discovered yet.</span></div></div>
-<div class="status"><div><span id="dot" class="dot"></span><b id="linkState">Offline</b></div><div id="peer">No peer detected</div><div id="lastPing" class="small">No ping received yet</div></div>
-<div class="small" style="margin-top:8px">Listening runs continuously after microphone permission. Start broadcasting independently to make this device visible; you can still pair with a discovered device while your own broadcast is off. A peer is marked connected only after a handshake packet is received.</div>
+<h2>Device identity &amp; link</h2>
+<div class="status" style="margin:8px 0"><span class="small">YOUR 4-DIGIT DEVICE ID</span><div id="deviceId" style="font-size:30px;font-weight:800;letter-spacing:5px">----</div><span class="small">Kept for this browser tab (survives reloads).</span></div>
+<label>Your device name (max 12 bytes on air)</label><input id="deviceName" maxlength="20">
+<div class="row" style="margin-top:10px"><button id="start">Start broadcasting</button><button id="stop" class="danger" disabled>Stop</button><button id="ping" class="secondary" disabled>Ping peer</button></div>
+<div class="status"><b>Nearby devices</b><div class="small">Devices appear after one of their frames is fully decoded (RS + CRC). You can pair while your own broadcast is off.</div><div id="nearby"></div></div>
+<div class="status"><div><span id="dot" class="dot"></span><b id="linkState">Audio off</b></div><div id="peer" class="small">No peer</div></div>
 </section>
+
 <section class="card">
 <h2>Radio settings</h2>
-<div class="grid" style="margin:0">
-<div><label>Sender base frequency (Hz)</label><input id="txFreq" type="number" min="14000" max="20000" step="100" value="17200"></div>
-<div><label>Receiver base frequency (Hz)</label><input id="rxFreq" type="number" min="14000" max="20000" step="100" value="17200"></div>
-<div><label>Channel spacing (Hz)</label><input id="spacing" type="number" min="250" max="1200" step="50" value="700"></div>
-<div><label>Symbol duration (ms)</label><select id="symbol"><option value="160">Robust · 160</option><option value="120" selected>Balanced · 120</option><option value="90">Fast · 90</option></select></div>
+<div class="grid" style="margin:0;grid-template-columns:1fr 1fr">
+<div><label>Band</label><select id="band"><option value="near">Near-ultrasonic · 16.8 kHz+</option><option value="ultra">Ultrasonic · 18.0 kHz+</option><option value="audible">Audible · 1.5 kHz+ (debug)</option><option value="custom">Custom</option></select></div>
+<div><label>Speed</label><select id="speed"><option value="robust">Robust · 80 ms</option><option value="balanced">Balanced · 50 ms</option><option value="fast">Fast · 32 ms</option><option value="custom">Custom</option></select></div>
+<div><label>Lowest tone (Hz)</label><input id="base" type="number" step="50"></div>
+<div><label>Tone spacing (Hz)</label><input id="spacing" type="number" step="5"></div>
+<div><label>Symbol length (ms)</label><input id="symMs" type="number" step="1"></div>
+<div><label>Volume <span id="ampVal"></span></label><input id="amp" type="range" min="0.1" max="1" step="0.05"></div>
 </div>
-<p class="small">Use matching receiver base frequency, sender base frequency, channel spacing and symbol duration on both phones. The receiver now searches across timing offsets and locks its symbol clock to the received preamble. The microphone sampler uses overlapping windows for better timing recovery. Frequencies are clamped to 14–20 kHz. Changing settings restarts discovery.</p>
+<div id="summary" class="status small"></div>
+<div id="settingsMsg" class="small"></div>
+<label class="check"><input id="loopback" type="checkbox"> Decode my own transmissions (loopback)</label>
+<div class="row" style="margin-top:10px"><button id="selfTest" class="secondary">Self-test (own mic)</button><button id="sweep" class="secondary">Tone sweep</button></div>
+<div id="testResult" class="status small">Run Self-test on each phone first. It transmits a frame and tries to decode it with the same phone's microphone.</div>
 </section>
 </div>
+
 <div class="grid">
-<section class="card"><h2>Received messages</h2><div id="messages" class="messages"></div><div class="small" id="rxHint">Messages from the peer will appear here.</div></section>
-<section class="card"><h2>Send message</h2><textarea id="compose" maxlength="180" placeholder="Type a message (max 180 characters)…"></textarea><div class="row"><span class="small grow" id="charCount">0 / 180</span><button id="sendMsg" disabled>Send</button></div><div class="status" id="sendState">Connect to another device first.</div></section>
+<section class="card"><h2>Received messages</h2><div id="messages" class="messages"></div><div class="small">Messages addressed to this device appear here.</div></section>
+<section class="card"><h2>Send message</h2><textarea id="compose" placeholder="Type a message (max 180 bytes)…"></textarea><div class="row"><span class="small grow" id="charCount">0 / 180 bytes</span><button id="sendMsg" disabled>Send</button></div><div class="status" id="sendState">Pair with a nearby device first.</div></section>
 </div>
+
 <div class="grid">
-<section class="card"><h2>Packet monitor</h2><div class="log" id="packets">No packets yet.</div></section>
-<section class="card"><h2>Diagnostics · always-on mic</h2><div class="status" id="diag">Requesting microphone permission…</div><label>Live receiver spectrum (14–20 kHz)</label><canvas id="spectrum" width="900" height="190" style="width:100%;height:190px;background:#0b111b;border:1px solid var(--line);border-radius:9px"></canvas><div id="spectrumReadout" class="small">Live microphone spectrum · discovery can be started or stopped independently.</div><div id="decoderStatus" class="status small">Decoder: waiting for a broadcast preamble</div><p class="small">A device appears in Nearby only after its beacon preamble, sync sequence and CRC are decoded. Pair starts a targeted four-step request/accept/confirm/complete handshake. A received message is separately CRC-checked. Because acoustic audio is half-duplex in practice, simultaneous transmissions can collide; retry if a packet is missed.</p></section>
+<section class="card"><h2>Packet monitor</h2><div class="log" id="packets"></div></section>
+<section class="card"><h2>Diagnostics</h2>
+<div id="stats" class="status small">Audio off.</div>
+<label>Receiver spectrum around the band (dashed = the 16 tones)</label><canvas id="spectrum" width="900" height="170" style="height:170px"></canvas>
+<label>Tone waterfall (rows = tones 0–15, time →; yellow = preamble lock, green = frame OK, red = failed)</label><canvas id="waterfall" width="600" height="128" style="height:128px"></canvas>
+<div id="decoderStatus" class="status small">Decoder: idle</div>
+</section>
 </div>
+
+<section class="card" style="margin-top:12px"><h2>If devices do not see each other</h2><ul class="tips">
+<li>Both devices must use identical radio settings. Open the app on the second device by scanning the QR code above; it carries the settings.</li>
+<li>Run <b>Self-test</b> on each device. If it fails, the phone cannot hear its own speaker in that band: raise media volume, switch to <i>Near-ultrasonic</i>, or try <i>Audible</i> to confirm everything else works.</li>
+<li>Use <b>Tone sweep</b> to see which of the 16 tones your hardware passes. Many phone speakers and microphones lose output above about 18 kHz.</li>
+<li>Disconnect Bluetooth audio. Keep devices 0.3–3 m apart, and keep the microphone uncovered.</li>
+<li>Acoustic links are half-duplex. The app listens before it talks and retries unacknowledged packets, but a beacon takes about 3–4 s on air.</li>
+<li>Keep the screen on. Mobile browsers pause audio for background tabs.</li>
+</ul></section>
+
+<script>
+/*MODEM-START*/
+var UM=(function(){'use strict';
+const NT=16,PRE=[0,2,8,9,12,4,14,10,15,13,7,6,3,11,1,5],NPRE=16,HDR_SYMS=12,MAGIC=10,MAX_BODY=200,TH=0.40;
+const TYPE={BEACON:1,PAIR_REQ:2,PAIR_ACK:3,MSG:4,ACK:5,PING:6,PONG:7};const TYPE_NAME={};for(const k in TYPE)TYPE_NAME[TYPE[k]]=k;
+// ---- GF(256) Reed-Solomon (poly 0x11d, fcr 0) ----
+const EXP=new Uint8Array(512),LOG=new Uint8Array(256);(function(){let x=1;for(let i=0;i<255;i++){EXP[i]=x;LOG[x]=i;x<<=1;if(x&256)x^=0x11d}for(let i=255;i<512;i++)EXP[i]=EXP[i-255]})();
+const gmul=(a,b)=>(a===0||b===0)?0:EXP[LOG[a]+LOG[b]];
+const gdiv=(a,b)=>{if(b===0)throw new Error('gf div0');return a===0?0:EXP[(LOG[a]+255-LOG[b])%255]};
+const ginv=a=>EXP[255-LOG[a]];
+const pscale=(p,x)=>p.map(v=>gmul(v,x));
+function padd(p,q){const n=Math.max(p.length,q.length),r=new Array(n).fill(0);for(let i=0;i<p.length;i++)r[i+n-p.length]=p[i];for(let i=0;i<q.length;i++)r[i+n-q.length]^=q[i];return r}
+function pmul(p,q){const r=new Array(p.length+q.length-1).fill(0);for(let j=0;j<q.length;j++)for(let i=0;i<p.length;i++)r[i+j]^=gmul(p[i],q[j]);return r}
+function peval(p,x){let y=p[0];for(let i=1;i<p.length;i++)y=gmul(y,x)^p[i];return y}
+const GEN={};function rsGen(n){if(!GEN[n]){let g=[1];for(let i=0;i<n;i++)g=pmul(g,[1,EXP[i]]);GEN[n]=g}return GEN[n]}
+function rsEncode(msg,n){msg=Array.from(msg);const g=rsGen(n),out=msg.concat(new Array(n).fill(0));for(let i=0;i<msg.length;i++){const c=out[i];if(c!==0)for(let j=1;j<g.length;j++)out[i+j]^=gmul(g[j],c)}for(let i=0;i<msg.length;i++)out[i]=msg[i];return out}
+function rsSynd(m,n){const s=new Array(n+1).fill(0);for(let i=0;i<n;i++)s[i+1]=peval(m,EXP[i]);return s}
+function rsForney(s,pos,len){const f=s.slice(1);for(const p of pos){const x=EXP[len-1-p];for(let j=0;j<f.length-1;j++)f[j]=gmul(f[j],x)^f[j+1]}return f}
+function rsLocator(s,n,ec){let el=[1],ol=[1];const sh=s.length>n?s.length-n:0;for(let i=0;i<n-ec;i++){const K=i+sh;let d=s[K];for(let j=1;j<el.length;j++)d^=gmul(el[el.length-1-j],s[K-j]||0);ol.push(0);if(d!==0){if(ol.length>el.length){const nl=pscale(ol,d);ol=pscale(el,ginv(d));el=nl}el=padd(el,pscale(ol,d))}}while(el.length&&el[0]===0)el.shift();if((el.length-1)*2+ec>n)throw new Error('too many errors');return el}
+function rsFindErrors(elr,len){const errs=elr.length-1,pos=[];for(let i=0;i<len;i++)if(peval(elr,EXP[i])===0)pos.push(len-1-i);if(pos.length!==errs)throw new Error('chien');return pos}
+function rsCorrect(m,s,pos){const cp=pos.map(p=>m.length-1-p);let loc=[1];for(const c of cp)loc=pmul(loc,padd([1],[EXP[c],0]));const prod=pmul(s.slice().reverse(),loc),nn=loc.length-1,ev=prod.slice(prod.length-(nn+1));const X=cp.map(c=>EXP[c]),E=new Array(m.length).fill(0);for(let i=0;i<X.length;i++){const xi=ginv(X[i]);let lp=1;for(let j=0;j<X.length;j++)if(j!==i)lp=gmul(lp,1^gmul(xi,X[j]));if(lp===0)throw new Error('forney');E[pos[i]]=gdiv(gmul(X[i],peval(ev,xi)),lp)}return padd(m,E)}
+function rsDecode(cw,n,erase){erase=erase||[];let m=Array.from(cw);if(erase.length>n)throw new Error('too many erasures');for(const e of erase)m[e]=0;let s=rsSynd(m,n);if(s.some(v=>v!==0)){const el=rsLocator(rsForney(s,erase,m.length),n,erase.length);const ep=rsFindErrors(el.slice().reverse(),m.length);m=rsCorrect(m,s,erase.concat(ep));if(rsSynd(m,n).some(v=>v!==0))throw new Error('uncorrectable')}let fixed=0;for(let i=0;i<cw.length;i++)if(m[i]!==cw[i])fixed++;return{data:m.slice(0,m.length-n),fixed}}
+// errors-only first, then erase the least-confident bytes (soft decision)
+function rsDecodeSoft(cw,n,conf,maxErase){try{return rsDecode(cw,n,[])}catch(e){}const order=conf.map((v,i)=>[v,i]).sort((a,b)=>a[0]-b[0]).map(x=>x[1]);for(let k=2;k<=maxErase;k+=2){try{return rsDecode(cw,n,order.slice(0,k))}catch(e){}}return null}
+function crc16(a){let c=65535;for(const b of a){c^=b<<8;for(let i=0;i<8;i++)c=(c&32768)?((c<<1)^0x1021)&65535:(c<<1)&65535}return c}
+const paritySize=L=>Math.min(255-L,Math.max(8,Math.ceil(L*0.3)));
+const frameSymbols=L=>NPRE+HDR_SYMS+2*(L+paritySize(L));
+const bodyLen=payloadLen=>5+payloadLen+2;
+function frameDuration(cfg,L){return(frameSymbols(L)*cfg.symMs+80)/1000}
+function makeConfig(o){const sr=o.sampleRate,S=o.symMs/1000*sr,G=Math.round(Math.max(0.008,0.22*o.symMs/1000)*sr),M=Math.round(0.04*S),W=Math.max(64,Math.floor(S)-G-M),h=Math.max(16,Math.round(S/10));const freqs=[];for(let k=0;k<NT;k++)freqs.push(o.base+k*o.spacing);const win=new Float32Array(W);for(let i=0;i<W;i++)win[i]=0.5-0.5*Math.cos(2*Math.PI*(i+0.5)/W);const coeff=new Float64Array(NT);for(let k=0;k<NT;k++)coeff[k]=2*Math.cos(2*Math.PI*freqs[k]/sr);const ea=3e-5*W/4;return{sampleRate:sr,symMs:o.symMs,base:o.base,spacing:o.spacing,S,G,M,W,h,freqs,win,coeff,eps:ea*ea,ref:(W/4)*(W/4),binsApart:o.spacing*W/sr}}
+function encodeFrame(spec){const payload=Array.from(spec.payload||[]);const body=[(spec.src>>8)&255,spec.src&255,(spec.dst>>8)&255,spec.dst&255,spec.seq&255].concat(payload);const L=body.length+2;if(L>MAX_BODY)throw new Error('payload too long');const hdr=[(MAGIC<<4)|(spec.type&15),L];const c=crc16(hdr.concat(body));body.push(c>>8,c&255);const cw=rsEncode(hdr,4).concat(rsEncode(body,paritySize(L)));const syms=PRE.slice();for(const b of cw)syms.push(b>>4,b&15);return syms}
+// continuous-phase FSK: no clicks between symbols, short fade at the frame edges
+function synthesize(cfg,syms,amp){const sr=cfg.sampleRate,S=cfg.S,lead=Math.round(0.03*sr),tail=Math.round(0.05*sr),body=Math.round(syms.length*S),out=new Float32Array(lead+body+tail),fade=Math.round(0.006*sr),TWO=2*Math.PI;let ph=0;for(let k=0;k<syms.length;k++){const a=Math.round(k*S),b=Math.round((k+1)*S),w=TWO*cfg.freqs[syms[k]]/sr;for(let i=a;i<b;i++){let g=amp;if(i<fade)g*=0.5-0.5*Math.cos(Math.PI*i/fade);else if(body-i<fade)g*=0.5-0.5*Math.cos(Math.PI*(body-i)/fade);out[lead+i]=g*Math.sin(ph);ph+=w;if(ph>TWO)ph-=TWO}}return out}
+function sweep(cfg,toneSec,amp){const sr=cfg.sampleRate,n=Math.round(toneSec*sr),out=new Float32Array(NT*n+Math.round(0.05*sr)),fade=Math.round(0.006*sr);for(let k=0;k<NT;k++){const w=2*Math.PI*cfg.freqs[k]/sr;for(let i=0;i<n;i++){let g=amp;if(i<fade)g*=0.5-0.5*Math.cos(Math.PI*i/fade);else if(n-i<fade)g*=0.5-0.5*Math.cos(Math.PI*(n-i)/fade);out[k*n+i]=g*Math.sin(w*i)}}return out}
+
+class Receiver{
+ constructor(cfg){this.cfg=cfg;this.size=1<<20;this.mask=this.size-1;this.buf=new Float32Array(this.size);this.total=0;this.FR=1024;this.frR=new Float32Array(this.FR*NT);this.frJ=new Int32Array(this.FR).fill(-1);this.hopJ=Math.ceil(cfg.W/cfg.h);this.tmp=new Float64Array(cfg.W);this.e=new Float64Array(NT);this.state='hunt';this.muted=false;this.cand=null;this.floor=Infinity;this.act=0;this.lastSum=0;this.lastScore=0;this.peakScore=0;this.onFrame=null;this.onEvent=null;this.onHop=null;this.stats={locks:0,frames:0,headerFail:0,bodyFail:0,crcFail:0,lost:0}}
+ emit(k,i){if(this.onEvent)this.onEvent(k,i||{})}
+ push(x){const m=this.mask;for(let i=0;i<x.length;i++)this.buf[(this.total+i)&m]=x[i];this.total+=x.length;while(this.hopJ*this.cfg.h<=this.total){this.hop(this.hopJ);this.hopJ++}if(this.state==='data')this.decode()}
+ powers(end,out){const c=this.cfg,W=c.W,win=c.win,b=this.buf,m=this.mask,t=this.tmp,s=end-W;for(let i=0;i<W;i++)t[i]=b[(s+i)&m]*win[i];let sum=0;for(let k=0;k<NT;k++){const cf=c.coeff[k];let s1=0,s2=0;for(let i=0;i<W;i++){const s0=t[i]+cf*s1-s2;s2=s1;s1=s0}const p=s1*s1+s2*s2-cf*s1*s2;out[k]=p>0?p:0;sum+=out[k]}return sum}
+ hop(j){const c=this.cfg,sl=j%this.FR,e=this.e,sum=this.powers(j*c.h,e),d=sum+c.eps,o=sl*NT;let mx=0;for(let k=0;k<NT;k++){const r=e[k]/d;this.frR[o+k]=r;if(r>mx)mx=r}this.frJ[sl]=j;this.lastSum=sum;
+  this.floor=sum<this.floor?sum:Math.min(sum,this.floor*1.0006+c.eps*1e-3);
+  this.act=this.act*0.95+((mx>0.3&&sum>this.floor*6+c.eps)?0.05:0);
+  if(this.onHop)this.onHop(this.frR.subarray(o,o+NT),sum,e);
+  if(this.state==='hunt'&&!this.muted)this.detect(j)}
+ detect(j){const c=this.cfg,Sh=c.S/c.h;let sc=0;for(let k=0;k<NPRE;k++){const jj=Math.round(j-(NPRE-1-k)*Sh);if(jj<0)return;const sl=jj%this.FR;if(this.frJ[sl]!==jj)return;sc+=this.frR[sl*NT+PRE[k]]}sc/=NPRE;this.lastScore=sc;if(sc>this.peakScore)this.peakScore=sc;
+  if(this.cand){if(sc>this.cand.sc){this.cand.sc=sc;this.cand.j=j}else if(j-this.cand.j>=Math.ceil(Sh*0.6)){const cd=this.cand;this.cand=null;this.lock(cd)}}else if(sc>=TH)this.cand={j,sc}}
+ fine(t){const c=this.cfg,e=this.e,tp=new Float64Array(NT);let sc=0,pw=0;for(let k=0;k<NPRE;k++){const sum=this.powers(Math.round(t-(NPRE-1-k)*c.S),e);sc+=e[PRE[k]]/(sum+c.eps);tp[PRE[k]]=e[PRE[k]];pw+=sum}return{t,score:sc/NPRE,tp,pow:pw/NPRE}}
+ lock(cd){const c=this.cfg,step=Math.max(1,Math.round(c.h/4));let best=null;for(let d=-c.h;d<=c.h;d+=step){const r=this.fine(cd.j*c.h+d);if(!best||r.score>best.score)best=r}
+  if(best.score<TH*0.85){this.emit('reject',{score:best.score});return}
+  let gm=0;for(let k=0;k<NT;k++)if(best.tp[k]>gm)gm=best.tp[k];this.gain=new Float64Array(NT);for(let k=0;k<NT;k++)this.gain[k]=Math.max(best.tp[k]/(gm||1),0.03);
+  this.t0=best.t;this.prePow=best.pow;this.lockScore=best.score;this.syms=[];this.confs=[];this.weak=0;this.need=0;this.hdr=null;this.state='data';this.stats.locks++;
+  this.emit('lock',{score:best.score,level:10*Math.log10(best.pow/c.ref+1e-12)})}
+ abort(reason,stat){this.state='hunt';this.cand=null;if(stat)this.stats[stat]++;this.emit('abort',{reason,syms:this.syms?this.syms.length:0})}
+ setMuted(v){this.muted=v;if(v){this.cand=null;if(this.state==='data')this.abort('muted for own transmission')}}
+ busy(){return this.state==='data'||!!this.cand||this.act>0.25}
+ pack(from,count){const bytes=[],conf=[];for(let i=from;i<from+count;i+=2){bytes.push((this.syms[i]<<4)|this.syms[i+1]);conf.push(Math.min(this.confs[i],this.confs[i+1]))}return{bytes,conf}}
+ decode(){const c=this.cfg,e=this.e;while(this.state==='data'){const m=this.syms.length,end=Math.round(this.t0+(m+1)*c.S);if(end>this.total)return;const sum=this.powers(end,e);let b=0,bv=-1,sv=0;for(let k=0;k<NT;k++){const v=e[k]/this.gain[k];if(v>bv){sv=bv<0?0:bv;bv=v;b=k}else if(v>sv)sv=v}
+   this.syms.push(b);this.confs.push(bv/(bv+sv+1e-30));
+   if(sum<this.prePow*0.02){if(++this.weak>=8){this.abort('signal lost','lost');return}}else this.weak=0;
+   if(this.syms.length===HDR_SYMS){const p=this.pack(0,HDR_SYMS),r=rsDecodeSoft(p.bytes,4,p.conf,2);if(!r){this.abort('header uncorrectable','headerFail');return}const t=r.data[0]&15,L=r.data[1];if((r.data[0]>>4)!==MAGIC||!TYPE_NAME[t]||L<7||L>MAX_BODY){this.abort('invalid header','headerFail');return}this.hdr={type:t,L,fixed:r.fixed};this.P=paritySize(L);this.need=HDR_SYMS+2*(L+this.P);this.emit('header',{type:TYPE_NAME[t],L,symbols:this.need})}
+   else if(this.need&&this.syms.length===this.need){const p=this.pack(HDR_SYMS,this.need-HDR_SYMS),r=rsDecodeSoft(p.bytes,this.P,p.conf,this.P-2);if(!r){this.abort('too many symbol errors for Reed-Solomon','bodyFail');return}const body=r.data,L=this.hdr.L,t=this.hdr.type;const crc=(body[L-2]<<8)|body[L-1];if(crc!==crc16([(MAGIC<<4)|t,L].concat(body.slice(0,L-2)))){this.abort('CRC mismatch','crcFail');return}
+    let cs=0;for(const v of this.confs)cs+=v;const f={type:t,typeName:TYPE_NAME[t],src:(body[0]<<8)|body[1],dst:(body[2]<<8)|body[3],seq:body[4],payload:Uint8Array.from(body.slice(5,L-2)),quality:{score:this.lockScore,fixed:this.hdr.fixed+r.fixed,conf:cs/this.confs.length,level:10*Math.log10(this.prePow/c.ref+1e-12)}};
+    this.stats.frames++;this.state='hunt';this.cand=null;this.emit('frame',f);if(this.onFrame)this.onFrame(f);return}}}
+}
+return{TYPE,TYPE_NAME,PRE,NT,TH,MAX_BODY,makeConfig,encodeFrame,synthesize,sweep,Receiver,frameDuration,frameSymbols,paritySize,bodyLen,crc16,rsEncode,rsDecode,rsDecodeSoft};
+})();
+/*MODEM-END*/
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
-(()=>{'use strict';
+/*APP-START*/
+(function(){'use strict';
+const VERSION='v8';
 const $=id=>document.getElementById(id);
-const pageUrl=location.href;
-$('pageUrl').textContent=pageUrl;
-$('copyUrl').onclick=()=>navigator.clipboard?.writeText(pageUrl).then(()=>$('copyUrl').textContent='Copied ✓').catch(()=>{});
-if(window.QRCode){$('qr').textContent='';new QRCode($('qr'),{text:pageUrl,width:116,height:116,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M})}else $('qr').textContent='QR library unavailable';
-const MAX_TEXT=180,PRE=[0,3,0,3,0,3,0,3,0,3,0,3,0,3,0,3],SYNC=[1,2,3,0,3,2,1,0];
-let ctx=null,stream=null,source=null,analyser=null,micReady=false,active=false,raf=0,txBusy=false,beaconTimer=0,scanTimer=0,scanPos=0,rxRing=new Float32Array(0),rxSamples=0,lastDecodedAt=0,peerId=null,peerName='',lastPeerAt=0,ourId=1000+Math.floor(Math.random()*9000),decoder=null,txQueue=Promise.resolve(),currentSymbolMs=120,txFreq=17200,rxFreq=17200,spacing=700;
-const txNodes=new Set(),txTimers=new Set();let txGeneration=0;const discovered=new Map();let pendingPair=null;
-$('deviceId').textContent=String(ourId);
-const log=(s)=>{let el=$('packets');if(el.textContent==='No packets yet.')el.textContent='';el.textContent=(new Date().toLocaleTimeString()+'  '+s+'\n'+el.textContent).slice(0,9000);el.scrollTop=0};
-function setLink(state,detail=''){ $('linkState').textContent=state;$('peer').textContent=detail;$('dot').className='dot '+(state==='Connected'?'on':state==='Discovering'?'wait':'');$('sendMsg').disabled=state!=='Connected'}
-function crc16(a){let c=65535;for(let b of a){c^=b<<8;for(let i=0;i<8;i++)c=(c&32768)?((c<<1)^0x1021)&65535:(c<<1)&65535}return c}
-function bytesToSymbols(a){let o=[];for(let b of a)o.push(b>>6,(b>>4)&3,(b>>2)&3,b&3);return o}
-function symbolsToBytes(a){let o=new Uint8Array(Math.floor(a.length/4));for(let i=0;i<o.length;i++)o[i]=(a[i*4]<<6)|(a[i*4+1]<<4)|(a[i*4+2]<<2)|a[i*4+3];return o}
-function u16(n){return[(n>>8)&255,n&255]}
-function u24(n){return[(n>>16)&255,(n>>8)&255,n&255]}
-function from24(a){return a[0]*65536+a[1]*256+a[2]}
-function frequencies(base){let sp=Math.max(250,Math.min(1200,Number($('spacing').value)||700));let b=Math.max(14000,Math.min(20000-3*sp,Number(base)||17200));return[b,b+sp,b+2*sp,b+3*sp]}
-async function audio(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:48000});if(ctx.state!=='running')await ctx.resume();return ctx}
-function tone(sym,at,duration){let o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=frequencies($('txFreq').value)[sym];g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(.18,at+.008);g.gain.setValueAtTime(.18,at+duration-.01);g.gain.linearRampToValueAtTime(0,at+duration);o.connect(g);g.connect(ctx.destination);txNodes.add(o);o.onended=()=>{txNodes.delete(o);try{o.disconnect();g.disconnect()}catch(e){}};o.start(at);o.stop(at+duration+.01)}
-function frame(type,payload){let body=new Uint8Array(1+3+payload.length);body[0]=type;body.set(u24(ourId),1);body.set(payload,4);let c=crc16(body),all=new Uint8Array(body.length+2);all.set(body);all[body.length]=c>>8;all[body.length+1]=c&255;return [...PRE,...SYNC,...bytesToSymbols(all)]}
-function sendFrame(type,payload){if(!micReady)return Promise.resolve();let syms=frame(type,payload),dur=currentSymbolMs/1000,gen=txGeneration;txQueue=txQueue.then(()=>new Promise(resolve=>{if(!micReady||gen!==txGeneration){resolve();return}txBusy=true;let start=ctx.currentTime+.12,i=0;function batch(){if(!micReady||gen!==txGeneration){txBusy=false;resolve();return}let end=Math.min(i+24,syms.length);for(;i<end;i++){let t=start+i*dur;if(t>ctx.currentTime+.005)tone(syms[i],t,dur)}if(i<syms.length){let timer=setTimeout(()=>{txTimers.delete(timer);batch()},Math.max(8,(start+i*dur-ctx.currentTime)*1000-15));txTimers.add(timer)}else{let finish=setTimeout(()=>{txTimers.delete(finish);txBusy=false;resolve()},Math.max(0,(start+syms.length*dur+.025-ctx.currentTime)*1000));txTimers.add(finish)}}batch()}));return txQueue}
-function encodeText(t){let data=new TextEncoder().encode(t);let p=new Uint8Array(1+data.length);p[0]=data.length;p.set(data,1);return p}
-function addMessage(text,from){let b=document.createElement('div');b.className='bubble '+(from==='me'?'me':'');let m=document.createElement('div');m.className='meta';m.textContent=(from==='me'?'You':'Peer')+' · '+new Date().toLocaleTimeString();b.append(m,document.createTextNode(text));$('messages').append(b);$('messages').scrollTop=$('messages').scrollHeight}
-function renderNearby(){
- const box=$('nearby');box.textContent='';
- const peers=[...discovered.values()].filter(p=>Date.now()-p.seen<18000);
- if(!peers.length){box.innerHTML='<span class="small">No devices discovered yet.</span>';return}
- for(const p of peers){const row=document.createElement('div');row.className='row';row.style.cssText='justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)';
- const info=document.createElement('div');info.className='grow';const name=document.createElement('b');name.textContent=p.name;const meta=document.createElement('div');meta.className='small';meta.textContent='ID '+String(p.id).padStart(4,'0')+' · '+(p.connected?'Paired':'Broadcast detected');info.append(name,meta);
- const btn=document.createElement('button');btn.className='secondary';btn.textContent=p.connected?'Paired':(pendingPair===p.id?'Pairing…':'Pair');btn.disabled=!micReady||p.connected||pendingPair!==null;btn.onclick=()=>requestPair(p.id);row.append(info,btn);box.append(row)}
+const T=UM.TYPE,TN=UM.TYPE_NAME,enc=new TextEncoder(),dec=new TextDecoder('utf-8',{fatal:false});
+const sleep=ms=>new Promise(r=>setTimeout(r,ms)),pad=n=>String(n).padStart(4,'0');
+const TURN=500,MAX_TEXT=180,NAME_BYTES=12;
+const BANDS={near:16800,ultra:18000,audible:1500};
+const SPEEDS={robust:{symMs:80,spacing:80},balanced:{symMs:50,spacing:100},fast:{symMs:32,spacing:125}};
+const store={get(k,s){try{return(s?sessionStorage:localStorage).getItem(k)}catch(e){return null}},set(k,v,s){try{(s?sessionStorage:localStorage).setItem(k,v)}catch(e){}}};
+const ago=t=>{const s=Math.round((Date.now()-t)/1000);return s<2?'just now':s<120?s+' s ago':Math.round(s/60)+' min ago'};
+
+// ---------- identity ----------
+let myId=Number(store.get('um.id',true));if(!(myId>=1000&&myId<=9999)){myId=1000+Math.floor(Math.random()*9000);store.set('um.id',String(myId),true)}
+$('deviceId').textContent=pad(myId);
+$('deviceName').value=store.get('um.name')||('Phone '+pad(myId).slice(-2));
+$('deviceName').oninput=()=>store.set('um.name',$('deviceName').value);
+function nameBytes(){let s=($('deviceName').value||'').trim()||'Phone',b=enc.encode(s);while(b.length>NAME_BYTES){s=Array.from(s).slice(0,-1).join('');b=enc.encode(s)}return b}
+
+// ---------- log ----------
+function log(s,cls){const el=$('packets'),d=document.createElement('div');d.textContent=new Date().toLocaleTimeString()+'  '+s;if(cls)d.className=cls;el.prepend(d);while(el.childNodes.length>300)el.lastChild.remove()}
+function setDecoder(s,cls){const el=$('decoderStatus');el.textContent='Decoder: '+s;el.className='status small '+(cls||'')}
+
+// ---------- settings ----------
+let settings={base:16800,spacing:100,symMs:50,amp:0.8};
+try{const j=JSON.parse(store.get('um.settings')||'null');if(j)Object.assign(settings,j)}catch(e){}
+{const m=/cfg=(\d+)-(\d+)-(\d+)/.exec(location.hash);if(m)Object.assign(settings,{base:+m[1],spacing:+m[2],symMs:+m[3]})}
+function fillInputs(){$('base').value=settings.base;$('spacing').value=settings.spacing;$('symMs').value=settings.symMs;$('amp').value=settings.amp;$('ampVal').textContent=Math.round(settings.amp*100)+'%';
+ $('band').value=Object.keys(BANDS).find(k=>BANDS[k]===settings.base)||'custom';
+ $('speed').value=Object.keys(SPEEDS).find(k=>SPEEDS[k].symMs===settings.symMs&&SPEEDS[k].spacing===settings.spacing)||'custom'}
+function validate(s){if(![s.base,s.spacing,s.symMs].every(Number.isFinite))return'Enter numbers for all fields.';const top=s.base+15*s.spacing,sr=ctx?ctx.sampleRate:44100,max=Math.min(20500,Math.floor(sr*0.46));if(s.base<300)return'Lowest tone must be at least 300 Hz.';if(top>max)return'Highest tone '+top+' Hz exceeds '+max+' Hz. Lower the base or spacing.';if(s.symMs<20||s.symMs>200)return'Symbol length must be 20–200 ms.';if(s.spacing<30||s.spacing>400)return'Spacing must be 30–400 Hz.';return''}
+function summary(){const c=UM.makeConfig({sampleRate:ctx?ctx.sampleRate:48000,...settings}),top=settings.base+15*settings.spacing;const beacon=UM.frameDuration(c,UM.bodyLen(nameBytes().length)),big=UM.frameDuration(c,UM.bodyLen(MAX_TEXT));
+ let s=`Tones ${(settings.base/1000).toFixed(2)}–${(top/1000).toFixed(2)} kHz · 16 tones ${settings.spacing} Hz apart · ${settings.symMs} ms/symbol · ${Math.round(4000/settings.symMs)} bit/s raw\nBeacon ≈ ${beacon.toFixed(1)} s on air · 180-byte message ≈ ${big.toFixed(1)} s`;
+ if(c.binsApart<2.2)s+=`\n⚠ Tones are only ${c.binsApart.toFixed(1)} analysis bins apart; increase spacing or symbol length.`;$('summary').textContent=s}
+function applySettings(s){const err=validate(s),msg=$('settingsMsg');if(err){msg.textContent=err;msg.className='small bad';fillInputs();return false}msg.textContent='';
+ const changed=s.base!==settings.base||s.spacing!==settings.spacing||s.symMs!==settings.symMs;settings=s;store.set('um.settings',JSON.stringify(settings));
+ try{history.replaceState(null,'','#cfg='+s.base+'-'+s.spacing+'-'+s.symMs)}catch(e){}
+ fillInputs();summary();renderQR();if(changed&&audioReady){rebuildModem();log(`Radio settings changed · ${s.base} Hz base, ${s.spacing} Hz spacing, ${s.symMs} ms`,'warn')}return true}
+const readInputs=()=>({base:Math.round(+$('base').value),spacing:Math.round(+$('spacing').value),symMs:Math.round(+$('symMs').value),amp:+$('amp').value});
+$('band').onchange=()=>{const v=$('band').value;if(v!=='custom')applySettings({...settings,base:BANDS[v]})};
+$('speed').onchange=()=>{const v=$('speed').value;if(v!=='custom')applySettings({...settings,...SPEEDS[v]})};
+for(const id of['base','spacing','symMs'])$(id).onchange=()=>applySettings(readInputs());
+$('amp').oninput=()=>{settings.amp=+$('amp').value;$('ampVal').textContent=Math.round(settings.amp*100)+'%';store.set('um.settings',JSON.stringify(settings))};
+
+// ---------- QR ----------
+function renderQR(){const url=location.href;$('pageUrl').textContent=url;const q=$('qr');q.textContent='';if(window.QRCode)new QRCode(q,{text:url,width:116,height:116,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});else q.textContent='QR library unavailable'}
+$('copyUrl').onclick=()=>navigator.clipboard?.writeText(location.href).then(()=>$('copyUrl').textContent='Copied ✓').catch(()=>{});
+
+// ---------- audio ----------
+let ctx=null,stream=null,micSrc=null,analyser=null,tap=null,outGain=null,rx=null,cfg=null,audioReady=false,enabling=null,tapKind='',wakeLock=null;
+const WORKLET=`class T extends AudioWorkletProcessor{constructor(){super();this.b=new Float32Array(2048);this.n=0}push(c,len){let o=0;while(o<len){const m=Math.min(len-o,this.b.length-this.n);if(c)this.b.set(c.subarray(o,o+m),this.n);else this.b.fill(0,this.n,this.n+m);this.n+=m;o+=m;if(this.n===this.b.length){this.port.postMessage(this.b,[this.b.buffer]);this.b=new Float32Array(2048);this.n=0}}}process(i){const c=i[0]&&i[0][0];this.push(c||null,c?c.length:128);return true}}registerProcessor('um-tap',T)`;
+function ensureAudio(){if(audioReady)return Promise.resolve(true);if(!enabling)enabling=enableAudio().then(()=>true).catch(e=>{$('audioState').textContent='Audio error: '+e.message;$('audioState').className='grow small bad';log('Audio error: '+e.message,'bad');enabling=null;return false});return enabling}
+async function enableAudio(){
+ if(!window.isSecureContext)throw new Error('the microphone needs HTTPS (or localhost).');
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw new Error('this browser has no getUserMedia.');
+ try{if(navigator.audioSession)navigator.audioSession.type='play-and-record'}catch(e){}
+ const AC=window.AudioContext||window.webkitAudioContext;ctx=ctx||new AC({latencyHint:'interactive'});const resumeP=ctx.resume();
+ stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1},video:false});
+ await resumeP.catch(()=>{});if(ctx.state!=='running')await ctx.resume();
+ micSrc=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=8192;analyser.smoothingTimeConstant=0.4;micSrc.connect(analyser);
+ outGain=ctx.createGain();outGain.connect(ctx.destination);const sink=ctx.createGain();sink.gain.value=0;sink.connect(ctx.destination);
+ const onChunk=d=>{if(rx)rx.push(d)};
+ if(ctx.audioWorklet&&window.AudioWorkletNode){try{const url=URL.createObjectURL(new Blob([WORKLET],{type:'application/javascript'}));await ctx.audioWorklet.addModule(url);tap=new AudioWorkletNode(ctx,'um-tap',{numberOfInputs:1,numberOfOutputs:1,outputChannelCount:[1],channelCount:1,channelCountMode:'explicit'});tap.port.onmessage=e=>onChunk(e.data);tapKind='AudioWorklet'}catch(e){tap=null;log('AudioWorklet unavailable ('+e.message+'); using ScriptProcessor','warn')}}
+ if(!tap){tap=ctx.createScriptProcessor(4096,1,1);tap.onaudioprocess=e=>onChunk(new Float32Array(e.inputBuffer.getChannelData(0)));tapKind='ScriptProcessor'}
+ micSrc.connect(tap);tap.connect(sink);
+ ctx.onstatechange=()=>{if(ctx.state!=='running'){$('audioState').textContent='Audio paused by the system ('+ctx.state+'). Tap “Enable” to resume.';$('enableAudio').disabled=false}};
+ audioReady=true;if(validate(settings))applySettings({...settings,base:BANDS.near});rebuildModem();
+ const tr=stream.getAudioTracks()[0],st=tr.getSettings?tr.getSettings():{};
+ $('audioState').textContent=`Listening · ${ctx.sampleRate} Hz · ${tapKind} · echoCancel ${st.echoCancellation??'?'} · AGC ${st.autoGainControl??'?'} · noiseSuppr ${st.noiseSuppression??'?'}`;$('audioState').className='grow small good';
+ $('enableAudio').textContent='Audio enabled';$('enableAudio').disabled=true;requestWake();summary();renderNearby();updateLink();log(`Audio ready · ${ctx.sampleRate} Hz · ${tapKind} · ID ${pad(myId)} · ${VERSION}`,'good');
 }
-function markConnected(id){
- const p=discovered.get(id);if(p)p.connected=true;peerId=id;peerName=p?.name||('Device '+id);lastPeerAt=Date.now();pendingPair=null;setLink('Connected',peerName+' · ID '+String(id).padStart(4,'0'));$('lastPing').textContent='Handshake completed · '+new Date().toLocaleTimeString();$('sendMsg').disabled=false;renderNearby();log('PAIR COMPLETE with '+String(id).padStart(4,'0'));
-}
-function requestPair(id){
- if(!micReady||pendingPair!==null)return;pendingPair=id;const p=discovered.get(id);renderNearby();log('Pair request sent to '+String(id).padStart(4,'0'));sendFrame(7,new Uint8Array(u24(id)));
- setTimeout(()=>{if(pendingPair===id){pendingPair=null;renderNearby();log('Pair request timed out for '+String(id).padStart(4,'0'))}},12000);
-}
-function handleFrame(type,id,payload){
- if(id===ourId)return;
- const target=payload.length>=3?from24(payload.slice(0,3)):0;
- if(type===1){
-   const n=payload.length?Math.min(payload[0],payload.length-1):0;
-   const name=n?new TextDecoder().decode(payload.slice(1,1+n)):'Phone';
-   const prev=discovered.get(id)||{};discovered.set(id,{id,name,seen:Date.now(),connected:!!prev.connected});
-   renderNearby();$('lastPing').textContent='Broadcast decoded from '+String(id).padStart(4,'0')+' · '+new Date().toLocaleTimeString();
-   log('RX BEACON · '+name+' [ID '+String(id).padStart(4,'0')+']');return;
+$('enableAudio').onclick=()=>{if(audioReady&&ctx.state!=='running'){ctx.resume().then(()=>{$('enableAudio').disabled=true;$('audioState').textContent='Audio resumed'})}else ensureAudio()};
+async function requestWake(){try{if(navigator.wakeLock&&!document.hidden)wakeLock=await navigator.wakeLock.request('screen')}catch(e){}}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&audioReady){if(ctx.state!=='running')ctx.resume().catch(()=>{});requestWake()}});
+
+let sweepMax=null,wfQ=[],wfTick=0;
+function rebuildModem(){cfg=UM.makeConfig({sampleRate:ctx.sampleRate,base:settings.base,spacing:settings.spacing,symMs:settings.symMs});rx=new UM.Receiver(cfg);
+ rx.onHop=(r,sum,e)=>{if(sweepMax)for(let k=0;k<16;k++)if(e[k]>sweepMax[k])sweepMax[k]=e[k];if(++wfTick%2===0&&wfQ.length<2000)wfQ.push(Float32Array.from(r))};
+ rx.onEvent=(k,i)=>{if(k==='lock'){wfQ.push({mark:'#ffd27d'});setDecoder(`preamble locked (match ${i.score.toFixed(2)}, level ${i.level.toFixed(0)} dBFS) · reading header…`,'warn')}
+  else if(k==='header')setDecoder(`header OK · ${i.type} · ${i.symbols} symbols ≈ ${(i.symbols*cfg.symMs/1000).toFixed(1)} s · receiving…`,'warn');
+  else if(k==='abort'){wfQ.push({mark:'#ff8d8d'});setDecoder('frame dropped: '+i.reason+' · hunting','bad');if(!/muted/.test(i.reason))log('RX frame dropped after '+i.syms+' symbols: '+i.reason,'bad')}
+  else if(k==='frame'){wfQ.push({mark:'#7de0a5'});setDecoder(`frame OK · ${i.typeName} from ${pad(i.src)} · ${i.quality.fixed} byte(s) corrected · hunting`,'good')}};
+ rx.onFrame=handleFrame;if(txActive&&!loopbackOn())rx.setMuted(true);setDecoder('hunting for preamble')}
+
+// ---------- transmit queue (half-duplex, listen-before-talk) ----------
+let txActive=false,unmuteTimer=0,curSource=null,curSpec=null,selfTestActive=false;const q=[];let qRunning=false;
+const loopbackOn=()=>$('loopback').checked||selfTestActive;
+function playSamples(samples){return new Promise(resolve=>{const b=ctx.createBuffer(1,samples.length,ctx.sampleRate);if(b.copyToChannel)b.copyToChannel(samples,0);else b.getChannelData(0).set(samples);const s=ctx.createBufferSource();s.buffer=b;s.connect(outGain);
+ txActive=true;clearTimeout(unmuteTimer);if(rx&&!loopbackOn())rx.setMuted(true);updateLink();let done=false;
+ const fin=()=>{if(done)return;done=true;txActive=false;curSource=null;const hold=250+1000*((ctx.outputLatency||0)+(ctx.baseLatency||0));unmuteTimer=setTimeout(()=>{if(!txActive&&rx)rx.setMuted(false)},hold);updateLink();resolve()};
+ s.onended=fin;setTimeout(fin,samples.length/ctx.sampleRate*1000+2000);curSource=s;s.start()})}
+function enqueue(item,opt){opt=opt||{};return new Promise(res=>{const it={...item,res,notBefore:performance.now()+(opt.delay||0)};if(opt.priority)q.unshift(it);else q.push(it);pump()})}
+async function pump(){if(qRunning)return;qRunning=true;try{while(q.length){const it=q.shift();const wait=it.notBefore-performance.now();if(wait>0)await sleep(wait);if(!audioReady){it.res();continue}
+  const t0=performance.now();while(rx&&rx.busy()&&!loopbackOn()&&performance.now()-t0<7000)await sleep(150+Math.random()*350);
+  try{if(it.raw)await playSamples(it.raw);else await transmit(it.spec)}catch(e){log('TX error: '+e.message,'bad')}it.res()}}finally{qRunning=false}}
+async function transmit(spec){const f={src:myId,dst:0,seq:0,payload:[],...spec},syms=UM.encodeFrame(f),samples=UM.synthesize(cfg,syms,settings.amp);curSpec=f;
+ log(`TX ${TN[f.type]}${f.dst?' → '+pad(f.dst):' (broadcast)'} · seq ${f.seq} · ${syms.length} symbols · ${(samples.length/ctx.sampleRate).toFixed(1)} s`,'tx');await playSamples(samples);curSpec=null}
+const send=(spec,opt)=>enqueue({spec},opt);
+const waiters=new Set();
+function waitFor(pred,ms){return new Promise(res=>{const w={pred,res};w.timer=setTimeout(()=>{waiters.delete(w);res(null)},ms);waiters.add(w)})}
+const replyTimeout=L=>UM.frameDuration(cfg,L)*1000+TURN+3500;
+let exchanges=0;
+async function sendWithRetry(spec,match,replyL,tries,onAttempt){exchanges++;try{for(let a=1;a<=tries;a++){if(onAttempt)onAttempt(a);await send(spec);const r=await waitFor(match,replyTimeout(replyL));if(r)return r;if(a<tries){log(`No reply to ${TN[spec.type]} (attempt ${a}/${tries}) · retrying`,'warn');await sleep(300+Math.random()*900)}}return null}finally{exchanges--}}
+
+// ---------- protocol ----------
+const peers=new Map(),seenMsgs=new Map();let peerId=null,pairing=null,seqCounter=Math.floor(Math.random()*256),sending=false,broadcasting=false,beaconTimer=0;
+const nextSeq=()=>(seqCounter=(seqCounter+1)&255);
+function touchPeer(id,score){let p=peers.get(id);if(!p){p={id,name:'Device '+pad(id),seen:0,paired:false,score:0};peers.set(id,p);log('Discovered device '+pad(id),'good')}p.seen=Date.now();p.score=score;return p}
+function handleFrame(f){
+ for(const w of[...waiters])if(w.pred(f)){clearTimeout(w.timer);waiters.delete(w);w.res(f)}
+ const qs=`match ${f.quality.score.toFixed(2)} · ${f.quality.fixed} fixed · ${f.quality.level.toFixed(0)} dBFS`;
+ if(f.src===myId){log(`LOOPBACK ✓ decoded own ${f.typeName} · ${qs}`,'good');return}
+ const p=touchPeer(f.src,f.quality.score);
+ log(`RX ${f.typeName} from ${p.name} [${pad(f.src)}]${f.dst?' → '+pad(f.dst):''} · seq ${f.seq} · ${qs}`,'good');
+ if(f.dst!==0&&f.dst!==myId){renderNearby();return}
+ const nm=()=>{const n=dec.decode(f.payload).trim();if(n)p.name=n};
+ switch(f.type){
+  case T.BEACON:nm();break;
+  case T.PAIR_REQ:nm();markPaired(f.src);send({type:T.PAIR_ACK,dst:f.src,seq:f.seq,payload:nameBytes()},{priority:true,delay:TURN});break;
+  case T.PAIR_ACK:nm();break;
+  case T.MSG:{send({type:T.ACK,dst:f.src,seq:f.seq},{priority:true,delay:TURN});const key=f.src+':'+f.seq+':'+UM.crc16(f.payload),now=Date.now();if(seenMsgs.has(key)&&now-seenMsgs.get(key)<180000){log('Duplicate message (sender missed our ACK) · re-acknowledged','warn')}else{seenMsgs.set(key,now);addMessage(dec.decode(f.payload),p.name)}break}
+  case T.PING:send({type:T.PONG,dst:f.src,seq:f.seq},{priority:true,delay:TURN});break;
  }
- if(type===7&&target===ourId){
-   log('RX PAIR REQUEST from '+String(id).padStart(4,'0'));
-   sendFrame(8,new Uint8Array(u24(id)));return;
- }
- if(type===8&&target===ourId&&pendingPair===id){
-   log('RX PAIR ACCEPT from '+String(id).padStart(4,'0'));
-   sendFrame(9,new Uint8Array(u24(id)));return;
- }
- if(type===9&&target===ourId){
-   log('RX PAIR CONFIRM from '+String(id).padStart(4,'0'));
-   sendFrame(10,new Uint8Array(u24(id)));markConnected(id);return;
- }
- if(type===10&&target===ourId&&pendingPair===id){markConnected(id);return}
- if(type===3&&target===ourId){let text=new TextDecoder().decode(payload.slice(3));addMessage(text,'peer');$('lastPing').textContent='Message packet received · '+new Date().toLocaleTimeString();log('RX MESSAGE from '+String(id).padStart(4,'0')+' · '+text.length+' chars · CRC OK');sendFrame(4,new Uint8Array(u24(id)));return}
- if(type===4&&target===ourId){$('sendState').textContent='Packet ACK received ✓';log('RX ACK from '+String(id).padStart(4,'0')+' — message delivered');return}
- if(type===5){sendFrame(6,new Uint8Array(u24(id)));return}
- if(type===6&&target===ourId){$('lastPing').textContent='PING/PONG round trip confirmed';log('RX PONG from '+String(id).padStart(4,'0'))}
-}
-function goertzel(x,f,sr){let w=2*Math.cos(2*Math.PI*f/sr),s0=0,s1=0,s2=0;for(let v of x){s0=v+w*s1-s2;s2=s1;s1=s0}return s1*s1+s2*s2-w*s1*s2}
-function classify(x){
- const fs=frequencies($('rxFreq').value),n=x.length;
- let meanSq=0;for(let i=0;i<n;i++)meanSq+=x[i]*x[i];
- const rms=Math.sqrt(meanSq/Math.max(1,n));
- const p=fs.map(f=>goertzelWindowed(x,f,ctx.sampleRate));
- const order=p.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
- const ratio=order[0][0]/Math.max(1e-12,order[1][0]);
- const confident=rms>=0.00018&&ratio>=1.55;
- return {sym:confident?order[0][1]:-1,rawSym:order[0][1],ratio,rms};
-}
-function goertzelWindowed(x,f,sr){
- const w=2*Math.cos(2*Math.PI*f/sr);let s0=0,s1=0,s2=0,n=x.length;
- for(let i=0;i<n;i++){const win=.5-.5*Math.cos(2*Math.PI*i/Math.max(1,n-1));s0=x[i]*win+w*s1-s2;s2=s1;s1=s0;}
- return Math.max(0,s1*s1+s2*s2-w*s1*s2);
-}
-let decodeState='hunt',rxHistory=[],frameSyms=[],syncSyms=[],lockStart=0,symbolIndex=0,lastPreambleLockAt=-10;
-const RX_WINDOW_SECONDS=2048/48000;
-function setDecoderStatus(t){const el=$('decoderStatus');if(el)el.textContent='Decoder: '+t;}
-function resetDecoder(){decodeState='hunt';frameSyms=[];syncSyms=[];symbolIndex=0;lockStart=0;setDecoderStatus('waiting for a broadcast preamble');}
-function nearestHistory(t){
- let lo=0,hi=rxHistory.length-1;
- while(lo<=hi){const mid=(lo+hi)>>1;if(rxHistory[mid].t<t)lo=mid+1;else hi=mid-1;}
- let a=rxHistory[Math.max(0,Math.min(rxHistory.length-1,hi))],b=rxHistory[Math.max(0,Math.min(rxHistory.length-1,lo))];
- if(!a)return b||null;if(!b)return a;
- const best=Math.abs(a.t-t)<=Math.abs(b.t-t)?a:b;
- return Math.abs(best.t-t)<=.035?best:null;
-}
-function detectPreamble(now){
- const dur=currentSymbolMs/1000;
- // Candidate end points are taken from the newest 65 ms of overlapping mic windows.
- for(let j=rxHistory.length-1;j>=0;j--){
-   const end=rxHistory[j];if(end.t<now-.065)break;
-   if(end.t>now+.005||end.sym!==PRE[PRE.length-1])continue;
-   const firstCenter=end.t-(PRE.length-1)*dur;
-   let valid=0,matches=0;
-   for(let k=0;k<PRE.length;k++){
-     const sample=nearestHistory(firstCenter+k*dur);
-     if(!sample||sample.sym<0)continue;
-     valid++;if(sample.sym===PRE[k])matches++;
-   }
-   if(valid>=14&&matches>=13&&now-lastPreambleLockAt>2.2){
-     lockStart=firstCenter-dur/2;symbolIndex=PRE.length;syncSyms=[];frameSyms=[];decodeState='sync';lastPreambleLockAt=now;
-     setDecoderStatus('preamble locked · recovering symbol clock');
-     log('PREAMBLE detected · symbol timing locked');return true;
-   }
- }
- return false;
-}
-function decodeDataSymbol(sym){
- if(sym<0){setDecoderStatus('frame received with an unclear tone · waiting for next beacon');resetDecoder();return;}
- frameSyms.push(sym);
- if(frameSyms.length%4!==0)return;
- const bytes=symbolsToBytes(frameSyms);
- for(let n=4;n<=Math.min(256,bytes.length-2);n++){
-   const type=bytes[0],id=from24(bytes.slice(1,4));
-   if(![1,2,3,4,5,6,7,8,9,10].includes(type)||id<1000||id>9999)continue;
-   const got=(bytes[n]<<8)|bytes[n+1],candidate=bytes.slice(0,n);
-   if(crc16(candidate)===got){
-     const payload=candidate.slice(4);
-     log('FRAME CRC OK · type '+type+' · source '+String(id).padStart(4,'0'));
-     handleFrame(type,id,payload);resetDecoder();return;
-   }
- }
- if(frameSyms.length>1000){log('Frame too long without a valid CRC · resynchronising');resetDecoder();}
-}
-function processLockedSymbols(now){
- const dur=currentSymbolMs/1000;
- while(decodeState!=='hunt'){
-   const center=lockStart+(symbolIndex+.5)*dur;
-   if(now<center+.008)break;
-   const sample=nearestHistory(center),sym=sample?sample.sym:-1;
-   if(decodeState==='sync'){
-     syncSyms.push(sym);symbolIndex++;
-     if(syncSyms.length===SYNC.length){
-       let errors=0;for(let i=0;i<SYNC.length;i++)if(syncSyms[i]!==SYNC[i])errors++;
-       if(errors<=1){decodeState='data';setDecoderStatus('sync accepted · decoding device packet');log('SYNC OK · decoding packet bytes');}
-       else{log('SYNC mismatch · missed packet timing');resetDecoder();}
-     }
-   } else if(decodeState==='data'){
-     symbolIndex++;decodeDataSymbol(sym);
-   }
-   if(symbolIndex>1100){log('Decoder timeout · returning to discovery');resetDecoder();}
- }
-}
-function drawSpectrum(){
- const canvas=$('spectrum'),g=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
- const bins=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(bins);
- g.clearRect(0,0,w,h);g.fillStyle='#0b111b';g.fillRect(0,0,w,h);
- for(let j=0;j<=4;j++){let y=h-j*h/4;g.strokeStyle='#26344a';g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}
- g.beginPath();g.strokeStyle='#9eb2ff';g.lineWidth=2;let maxVal=0,maxHz=14000;
- for(let x=0;x<w;x++){let f=14000+x/w*6000,idx=Math.min(bins.length-1,Math.round(f/ctx.sampleRate*analyser.fftSize)),v=bins[idx]||0,y=h-v/255*h;if(v>maxVal){maxVal=v;maxHz=f}if(x===0)g.moveTo(x,y);else g.lineTo(x,y)}g.stroke();
- const fs=frequencies($('rxFreq').value);fs.forEach((f,i)=>{let x=(f-14000)/6000*w;g.strokeStyle=['#ffcc66','#75d6a0','#ff8b8b','#c79cff'][i];g.setLineDash([5,4]);g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke();g.setLineDash([]);g.fillStyle='#dce5f5';g.font='12px system-ui';g.fillText((f/1000).toFixed(1)+'k',Math.max(2,x+2),14+i*14)});
- $('spectrumReadout').textContent=`Strongest bin: ${(maxHz/1000).toFixed(2)} kHz · level ${maxVal}/255 · receive tones: ${fs.map(x=>(x/1000).toFixed(2)).join(' / ')} kHz`;
-}
-function processAudio(){
- if(!micReady)return;
- drawSpectrum();
- const data=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(data);
- const centerTime=ctx.currentTime-data.length/(2*ctx.sampleRate);
- const sample={t:centerTime,...classify(data)};rxHistory.push(sample);
- while(rxHistory.length&&rxHistory[0].t<centerTime-3.4)rxHistory.shift();
- if(!txBusy){if(decodeState==='hunt')detectPreamble(centerTime);
- if(decodeState!=='hunt')processLockedSymbols(centerTime);}
- raf=requestAnimationFrame(processAudio);
-}
-async function initMic(){if(micReady)return;await audio();stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1},video:false});source=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=2048;source.connect(analyser);micReady=true;rxHistory=[];$('diag').textContent=`Microphone live · AudioContext ${ctx.sampleRate} Hz · ${stream.getAudioTracks()[0].getSettings().channelCount||'?'} channel(s) · spectrum is running`;processAudio();}
-async function start(){await initMic();await audio();currentSymbolMs=Number($('symbol').value);txFreq=Number($('txFreq').value);rxFreq=Number($('rxFreq').value);spacing=Number($('spacing').value);active=true;resetDecoder();setLink('Discovering','Broadcasting ID '+ourId+'…');$('start').disabled=true;$('stop').disabled=false;$('diag').textContent=`Microphone live · ID ${ourId} · TX ${frequencies(txFreq).join(', ')} Hz · RX ${frequencies(rxFreq).join(', ')} Hz`;const beacon=async()=>{if(!active)return;let n=new TextEncoder().encode(($('deviceName').value||'Phone').slice(0,20));try{await sendFrame(1,new Uint8Array([n.length,...n]));}catch(e){log('Beacon transmit error: '+e.message)}if(active)beaconTimer=setTimeout(beacon,2200)};beacon();scanTimer=setInterval(()=>{for(const [id,p] of discovered)if(Date.now()-p.seen>18000)discovered.delete(id);renderNearby();if(peerId&&Date.now()-lastPeerAt>15000){peerId=null;peerName='';setLink('Discovering','Peer timed out; searching…');log('Peer timeout')}},2000);renderNearby();log('Discovery started · local ID '+ourId)}
-function stop(){active=false;txGeneration++;clearTimeout(beaconTimer);clearInterval(scanTimer);for(const timer of txTimers)clearTimeout(timer);txTimers.clear();for(const node of txNodes){try{node.stop()}catch(e){}try{node.disconnect()}catch(e){}}txNodes.clear();txBusy=false;txQueue=Promise.resolve();resetDecoder();peerId=null;peerName='';pendingPair=null;setLink('Offline','Microphone diagnostics remain on · ID '+ourId);$('start').disabled=false;$('stop').disabled=true;$('diag').textContent=micReady?`Microphone still live · ID ${ourId} · TX stopped · diagnostics continue`:'Microphone not available';renderNearby();log('Discovery stopped · pending transmissions cancelled; diagnostics remain active')}
-$('start').onclick=()=>start().catch(e=>{setLink('Offline','Could not start: '+e.message+' (Use HTTPS and allow microphone)');$('start').disabled=false;$('diag').textContent='Microphone error: '+e.message});$('stop').onclick=stop;
-// Start microphone diagnostics on page load; discovery remains an explicit user action.
-initMic().catch(e=>{$('diag').textContent='Microphone unavailable: '+e.message+' · Allow mic access or reload the HTTPS page.';});
-$('sendMsg').onclick=async()=>{let text=$('compose').value.trim();if(!text||!peerId)return;let data=encodeText(text),payload=new Uint8Array(3+data.length);payload.set(u24(peerId),0);payload.set(data,3);$('sendMsg').disabled=true;$('sendState').textContent='Transmitting message packet…';log(`TX MESSAGE ${new TextEncoder().encode(text).length} bytes to ${peerId.toString(16)}`);await sendFrame(3,payload);addMessage(text,'me');$('compose').value='';$('charCount').textContent='0 / 180';$('sendState').textContent='Packet sent. Waiting for receiver ACK…';$('sendMsg').disabled=!peerId};
-$('compose').oninput=()=>$('charCount').textContent=$('compose').value.length+' / 180';
-for(let id of ['txFreq','rxFreq','spacing','symbol'])$(id).addEventListener('change',()=>{if(active){stop();start().catch(e=>setLink('Offline',e.message))}});
+ renderNearby();updateLink()}
+function markPaired(id){peerId=id;for(const p of peers.values())p.paired=p.id===id;const p=peers.get(id);log(`PAIRED with ${p?p.name:''} [${pad(id)}]`,'good');renderNearby();updateLink()}
+async function requestPair(id){if(!(await ensureAudio())||pairing!==null)return;pairing=id;renderNearby();
+ const r=await sendWithRetry({type:T.PAIR_REQ,dst:id,seq:nextSeq(),payload:nameBytes()},f=>f.type===T.PAIR_ACK&&f.src===id&&f.dst===myId,7+NAME_BYTES,3);
+ pairing=null;if(r)markPaired(id);else log(`Pairing with ${pad(id)} failed: no PAIR_ACK after 3 attempts. Move closer or raise volume.`,'bad');renderNearby();updateLink()}
+function unpair(){peerId=null;for(const p of peers.values())p.paired=false;log('Unpaired','warn');renderNearby();updateLink()}
+function beaconSpec(){return{type:T.BEACON,dst:0,seq:nextSeq(),payload:nameBytes()}}
+function scheduleBeacon(first){clearTimeout(beaconTimer);if(!broadcasting)return;beaconTimer=setTimeout(async()=>{if(!broadcasting)return;if(!q.length&&!exchanges)await send(beaconSpec());scheduleBeacon(false)},first?150:4000+Math.random()*5000)}
+$('start').onclick=async()=>{if(!(await ensureAudio()))return;broadcasting=true;$('start').disabled=true;$('stop').disabled=false;log('Broadcasting started · beacon every ~4–9 s','good');scheduleBeacon(true);updateLink()};
+$('stop').onclick=()=>{broadcasting=false;clearTimeout(beaconTimer);for(let i=q.length-1;i>=0;i--)if(q[i].spec&&q[i].spec.type===T.BEACON){q[i].res();q.splice(i,1)}if(curSpec&&curSpec.type===T.BEACON&&curSource)try{curSource.stop()}catch(e){}$('start').disabled=false;$('stop').disabled=true;log('Broadcasting stopped · still listening','warn');updateLink()};
+$('ping').onclick=async()=>{if(!peerId)return;const to=peerId,seq=nextSeq();$('ping').disabled=true;const r=await sendWithRetry({type:T.PING,dst:to,seq},f=>f.type===T.PONG&&f.src===to&&f.seq===seq,7,1);log(r?`PONG from ${pad(to)} ✓ link works both ways`:`No PONG from ${pad(to)}`,r?'good':'bad');updateLink()};
+
+// ---------- messages ----------
+function addMessage(text,from,status){const b=document.createElement('div');b.className='bubble '+(from==='me'?'me':'');const m=document.createElement('div');m.className='meta';const base=(from==='me'?'You':from)+' · '+new Date().toLocaleTimeString();m.textContent=base+(status?' · '+status:'');b.append(m,document.createTextNode(text));$('messages').append(b);$('messages').scrollTop=$('messages').scrollHeight;return s=>m.textContent=base+' · '+s}
+const updateCount=()=>{const n=enc.encode($('compose').value).length;$('charCount').textContent=n+' / '+MAX_TEXT+' bytes';$('charCount').className='small grow'+(n>MAX_TEXT?' bad':'')};
+$('compose').oninput=updateCount;
+$('sendMsg').onclick=async()=>{const text=$('compose').value.trim(),bytes=enc.encode(text);if(!text||!peerId||sending)return;if(bytes.length>MAX_TEXT){$('sendState').textContent='Message is '+bytes.length+' bytes; the limit is '+MAX_TEXT+'.';return}
+ const to=peerId,seq=nextSeq(),dur=UM.frameDuration(cfg,UM.bodyLen(bytes.length));sending=true;updateLink();$('compose').value='';updateCount();const setSt=addMessage(text,'me','queued');
+ const r=await sendWithRetry({type:T.MSG,dst:to,seq,payload:bytes},f=>f.type===T.ACK&&f.src===to&&f.seq===seq,7,3,a=>{setSt(`sending, attempt ${a}/3`);$('sendState').textContent=`Transmitting (attempt ${a}/3) · ≈ ${dur.toFixed(1)} s on air, then waiting for ACK…`});
+ sending=false;setSt(r?'delivered ✓':'not acknowledged ✗');$('sendState').textContent=r?'Delivered ✓ (ACK received)':'No ACK after 3 attempts. The peer may have missed it; try again closer.';updateLink()};
+
+// ---------- self-test & sweep ----------
+$('selfTest').onclick=async()=>{if(!(await ensureAudio()))return;const seq=nextSeq(),spec={type:T.PING,dst:0,seq,payload:enc.encode('SELFTEST')};selfTestActive=true;rx.setMuted(false);$('selfTest').disabled=true;$('testResult').textContent='Transmitting a test frame and decoding it with this device’s microphone…';$('testResult').className='status small warn';
+ const wait=waitFor(f=>f.src===myId&&f.type===T.PING&&f.seq===seq,UM.frameDuration(cfg,UM.bodyLen(8))*1000+9000);await send(spec);const f=await wait;selfTestActive=false;$('selfTest').disabled=false;
+ if(f){$('testResult').textContent=`Self-test PASSED · preamble match ${f.quality.score.toFixed(2)} · ${f.quality.fixed} byte(s) corrected · level ${f.quality.level.toFixed(0)} dBFS · symbol confidence ${(f.quality.conf*100).toFixed(0)}%`;$('testResult').className='status small good'}
+ else{$('testResult').textContent='Self-test FAILED · this device could not decode its own transmission. Check the waterfall and decoder status. Raise volume, or try the Near-ultrasonic or Audible band.';$('testResult').className='status small bad'}};
+$('sweep').onclick=async()=>{if(!(await ensureAudio()))return;$('sweep').disabled=true;$('testResult').textContent='Playing the 16 tones (≈ 4 s)…';$('testResult').className='status small warn';const floor=rx.floor/16;sweepMax=new Float64Array(16);await enqueue({raw:UM.sweep(cfg,0.25,settings.amp)});await sleep(500);const m=sweepMax;sweepMax=null;$('sweep').disabled=false;
+ const best=Math.max(...m),db=v=>10*Math.log10(v/cfg.ref+1e-12),rel=Array.from(m,v=>Math.round(10*Math.log10((v+1e-30)/best)));const snr=db(best)-db(floor);const weak=rel.map((v,i)=>v<-15?i:-1).filter(i=>i>=0);
+ $('testResult').textContent=`Own-mic tone response (dB relative to the strongest tone):\n${rel.map((v,i)=>i+':'+v).join('  ')}\nStrongest ${db(best).toFixed(0)} dBFS · ≈ ${snr.toFixed(0)} dB above the noise floor`+(weak.length?`\n⚠ Weak tones: ${weak.join(', ')} (hardware roll-off; try a lower band)`:'')+(snr<15?'\n⚠ Very weak: raise volume or use a lower band.':'');$('testResult').className='status small '+(snr<15||weak.length>4?'warn':'good')};
+
+// ---------- UI rendering ----------
+function renderNearby(){const box=$('nearby');box.textContent='';const now=Date.now(),list=[...peers.values()].filter(p=>p.paired||now-p.seen<120000).sort((a,b)=>b.seen-a.seen);
+ if(!list.length){const s=document.createElement('div');s.className='small';s.style.marginTop='6px';s.textContent=audioReady?'Listening… no devices decoded yet.':'Enable audio to start listening.';box.append(s);return}
+ for(const p of list){const row=document.createElement('div');row.className='row';row.style.cssText='justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)';const info=document.createElement('div');info.className='grow';const n=document.createElement('b');n.textContent=p.name;const meta=document.createElement('div');meta.className='small';meta.textContent=`ID ${pad(p.id)} · heard ${ago(p.seen)} · match ${p.score.toFixed(2)}${p.paired?' · paired':''}`;info.append(n,meta);
+  const btn=document.createElement('button');btn.className='secondary';btn.textContent=p.paired?'Unpair':pairing===p.id?'Pairing…':'Pair';btn.disabled=!audioReady||(pairing!==null);btn.onclick=()=>p.paired?unpair():requestPair(p.id);row.append(info,btn);box.append(row)}}
+function updateLink(){let s,d='',dot='';if(!audioReady){s='Audio off'}else if(peerId){const p=peers.get(peerId);s='Paired';d=`${p?p.name:'Device'} · ID ${pad(peerId)} · last heard ${p?ago(p.seen):'?'}`;dot='on'}else{s=broadcasting?'Broadcasting + listening':'Listening';d=broadcasting?'Beaconing ID '+pad(myId):'Not broadcasting (others cannot discover this device, but you can still pair)';dot='wait'}
+ if(txActive)d+=' · transmitting…';$('linkState').textContent=s;$('peer').textContent=d;$('dot').className='dot '+dot;$('sendMsg').disabled=!audioReady||!peerId||sending;$('ping').disabled=!audioReady||!peerId;if(!peerId&&!sending)$('sendState').textContent='Pair with a nearby device first.';else if(peerId&&!sending&&/Pair with/.test($('sendState').textContent))$('sendState').textContent='Ready to send to '+(peers.get(peerId)?.name||pad(peerId))+'.'}
+let specBins=null,lastStats=0,peakShown=0;
+function drawSpectrum(){const c=$('spectrum'),g=c.getContext('2d'),w=c.width,h=c.height;if(!specBins||specBins.length!==analyser.frequencyBinCount)specBins=new Float32Array(analyser.frequencyBinCount);analyser.getFloatFrequencyData(specBins);
+ const binHz=ctx.sampleRate/analyser.fftSize,top=settings.base+15*settings.spacing,lo=Math.max(0,settings.base-1000),hi=Math.min(ctx.sampleRate/2,top+1000),y=db=>h-(Math.max(-120,Math.min(-10,db))+120)/110*h;
+ g.fillStyle='#0b111b';g.fillRect(0,0,w,h);g.strokeStyle='#26344a';g.fillStyle='#6f7f99';g.font='11px system-ui';for(let d=-100;d<=-20;d+=20){g.beginPath();g.moveTo(0,y(d));g.lineTo(w,y(d));g.stroke();g.fillText(d+' dB',w-44,y(d)-2)}
+ g.strokeStyle='#3f5070';g.setLineDash([3,4]);for(const f of cfg.freqs){const x=(f-lo)/(hi-lo)*w;g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke()}g.setLineDash([]);
+ g.beginPath();g.strokeStyle='#9eb2ff';g.lineWidth=1.5;for(let x=0;x<w;x++){const i0=Math.floor((lo+x/w*(hi-lo))/binHz),i1=Math.max(i0+1,Math.ceil((lo+(x+1)/w*(hi-lo))/binHz));let v=-200;for(let i=i0;i<i1&&i<specBins.length;i++)if(specBins[i]>v)v=specBins[i];x?g.lineTo(x,y(v)):g.moveTo(x,y(v))}g.stroke();
+ g.fillStyle='#dce5f5';g.fillText((lo/1000).toFixed(1)+' kHz',3,h-4);g.fillText((hi/1000).toFixed(1)+' kHz',w-60,h-4)}
+function drawWaterfall(){const c=$('waterfall'),g=c.getContext('2d'),w=c.width,h=c.height,rh=h/16;let n=wfQ.length;if(!n)return;if(n>w){wfQ.splice(0,n-w);n=w}g.drawImage(c,n,0,w-n,h,0,0,w-n,h);
+ for(let i=0;i<n;i++){const it=wfQ[i],x=w-n+i;if(it.mark){g.fillStyle=it.mark;g.fillRect(x,0,2,h);continue}for(let k=0;k<16;k++){const v=Math.min(1,it[k]*1.5);g.fillStyle=`rgb(${v*130|0},${v*210|0},${(25+v*230)|0})`;g.fillRect(x,h-(k+1)*rh,1,rh)}}wfQ.length=0}
+function renderStats(){const s=rx.stats,db=p=>(10*Math.log10(p/cfg.ref+1e-12)).toFixed(0);peakShown=Math.max(peakShown*0.85,rx.peakScore);rx.peakScore=0;
+ $('stats').textContent=`State: ${rx.state==='data'?'receiving a frame':rx.muted?'muted while transmitting':'hunting for preamble'}${txActive?' · TX on air':''}\nIn-band level ${db(rx.lastSum)} dBFS · noise floor ${db(rx.floor)} dBFS\nPreamble match now ${rx.lastScore.toFixed(2)} · recent peak ${peakShown.toFixed(2)} · lock at ≥ ${UM.TH.toFixed(2)} (noise ≈ 0.06–0.15)\nFrames OK ${s.frames} · locks ${s.locks} · header fails ${s.headerFail} · RS fails ${s.bodyFail} · CRC fails ${s.crcFail} · signal lost ${s.lost}`}
+function draw(){requestAnimationFrame(draw);if(!audioReady||!cfg)return;drawSpectrum();drawWaterfall();if(performance.now()-lastStats>250){lastStats=performance.now();renderStats()}}
+setInterval(()=>{renderNearby();updateLink()},3000);
+
+fillInputs();summary();renderQR();renderNearby();updateLink();updateCount();requestAnimationFrame(draw);
+log(`Ultrasonic Messenger ${VERSION} loaded · ID ${pad(myId)} · tap “Enable microphone & speaker”`);
 })();
+/*APP-END*/
 </script></body></html>
