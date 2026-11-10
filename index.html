@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ultrasonic Messenger — Link Lab</title>
+<style>
+:root{color-scheme:dark;--bg:#0d1119;--panel:#171f2d;--line:#344258;--fg:#eef3ff;--muted:#9eacc3;--accent:#a9b8ff;--green:#7de0a5;--amber:#ffd27d;--red:#ff8d8d}
+*{box-sizing:border-box}body{margin:auto;max-width:1000px;padding:18px;background:var(--bg);color:var(--fg);font:14px system-ui}h1{font-size:23px;margin:0}h2{font-size:16px;margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:120px}.status{padding:10px;border:1px solid var(--line);background:#0e1521;border-radius:9px;margin-top:9px;white-space:pre-wrap;overflow-wrap:anywhere}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#65738a;margin-right:6px}.dot.on{background:var(--green);box-shadow:0 0 10px #7de0a577}.dot.wait{background:var(--amber)}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}input,select,textarea{width:100%;background:#0e1521;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}textarea{min-height:70px;resize:vertical}button{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}button.secondary{background:#344158;color:var(--fg)}button.danger{background:#633b48;color:white}button:disabled{opacity:.4;cursor:not-allowed}.log{height:170px;overflow:auto;font:12px ui-monospace,monospace;white-space:pre-wrap;background:#0e1521;border:1px solid var(--line);border-radius:9px;padding:9px}.messages{height:210px;overflow:auto;display:flex;flex-direction:column;gap:7px}.bubble{max-width:95%;padding:9px 11px;border-radius:11px;background:#26334a;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.me{align-self:flex-end;background:#303b61}.bubble .meta{font-size:10px;color:#b4c0d5;margin-bottom:4px}.pill{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:20px;color:var(--muted)}progress{width:100%}
+</style></head><body>
+<h1>Ultrasonic Messenger <span class="pill">Link Lab v6</span></h1>
+<p class="muted">Independent acoustic broadcasting, always-on listening, nearby-device discovery and targeted pairing. No server or network transport is used for acoustic messages.</p>
+<section class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Open this app on another device</h2><span class="pill">QR from current URL</span></div><div class="row" style="margin-top:10px;align-items:center"><div id="qr" style="background:white;padding:8px;border-radius:8px;min-width:132px;min-height:132px;display:grid;place-items:center;color:#111">Loading QR…</div><div class="grow"><div class="small">QR encodes the exact page URL in this browser address bar. Deploy once, then scan this URL on the other phone.</div><div id="pageUrl" class="status" style="word-break:break-all"></div><button id="copyUrl" class="secondary">Copy page link</button></div></div></section>
+<div class="grid">
+<section class="card">
+<h2>Device identity & link</h2>
+<div class="status" style="margin:8px 0"><span class="small">YOUR 4-DIGIT DEVICE ID</span><div id="deviceId" style="font-size:30px;font-weight:800;letter-spacing:5px">----</div><span class="small">Generated on this page load; included in acoustic broadcasts.</span></div>
+<label>Your device name</label><input id="deviceName" maxlength="20" value="Phone A">
+<div class="row" style="margin-top:10px"><button id="start">Start broadcasting</button><button id="stop" class="danger" disabled>Stop</button></div>
+<div class="status" style="margin-top:10px"><b>Nearby devices</b><div class="small">Incoming broadcasts appear here even when your own broadcasting is OFF. Pair sends a one-time handshake without enabling your beacon.</div><div id="nearby"><span class="small">No devices discovered yet.</span></div></div>
+<div class="status"><div><span id="dot" class="dot"></span><b id="linkState">Offline</b></div><div id="peer">No peer detected</div><div id="lastPing" class="small">No ping received yet</div></div>
+<div class="small" style="margin-top:8px">Listening runs continuously after microphone permission. Start broadcasting independently to make this device visible; you can still pair with a discovered device while your own broadcast is off. A peer is marked connected only after a handshake packet is received.</div>
+</section>
+<section class="card">
+<h2>Radio settings</h2>
+<div class="grid" style="margin:0">
+<div><label>Sender base frequency (Hz)</label><input id="txFreq" type="number" min="14000" max="20000" step="100" value="17200"></div>
+<div><label>Receiver base frequency (Hz)</label><input id="rxFreq" type="number" min="14000" max="20000" step="100" value="17200"></div>
+<div><label>Channel spacing (Hz)</label><input id="spacing" type="number" min="250" max="1200" step="50" value="700"></div>
+<div><label>Symbol duration (ms)</label><select id="symbol"><option value="160">Robust · 160</option><option value="120" selected>Balanced · 120</option><option value="90">Fast · 90</option></select></div>
+</div>
+<p class="small">Use matching receiver base frequency, sender base frequency and spacing on both phones. Frequencies are clamped to 14–20 kHz. Changing settings restarts discovery.</p>
+</section>
+</div>
+<div class="grid">
+<section class="card"><h2>Received messages</h2><div id="messages" class="messages"></div><div class="small" id="rxHint">Messages from the peer will appear here.</div></section>
+<section class="card"><h2>Send message</h2><textarea id="compose" maxlength="180" placeholder="Type a message (max 180 characters)…"></textarea><div class="row"><span class="small grow" id="charCount">0 / 180</span><button id="sendMsg" disabled>Send</button></div><div class="status" id="sendState">Connect to another device first.</div></section>
+</div>
+<div class="grid">
+<section class="card"><h2>Packet monitor</h2><div class="log" id="packets">No packets yet.</div></section>
+<section class="card"><h2>Diagnostics · always-on mic</h2><div class="status" id="diag">Requesting microphone permission…</div><label>Live receiver spectrum (14–20 kHz)</label><canvas id="spectrum" width="900" height="190" style="width:100%;height:190px;background:#0b111b;border:1px solid var(--line);border-radius:9px"></canvas><div id="spectrumReadout" class="small">Live microphone spectrum · discovery can be started or stopped independently.</div><p class="small">A device appears in Nearby only after its beacon is decoded. Pair starts a targeted four-step request/accept/confirm/complete handshake. A received message is separately CRC-checked. Because acoustic audio is half-duplex in practice, simultaneous transmissions can collide; retry if a packet is missed.</p></section>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+(()=>{'use strict';
+const $=id=>document.getElementById(id);
+const pageUrl=location.href;
+$('pageUrl').textContent=pageUrl;
+$('copyUrl').onclick=()=>navigator.clipboard?.writeText(pageUrl).then(()=>$('copyUrl').textContent='Copied ✓').catch(()=>{});
+if(window.QRCode){$('qr').textContent='';new QRCode($('qr'),{text:pageUrl,width:116,height:116,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M})}else $('qr').textContent='QR library unavailable';
+const MAX_TEXT=180,PRE=[0,3,0,3,0,3,0,3,0,3,0,3,0,3,0,3],SYNC=[1,2,3,0,3,2,1,0];
+let ctx=null,stream=null,source=null,analyser=null,micReady=false,active=false,raf=0,txBusy=false,beaconTimer=0,scanTimer=0,scanPos=0,rxRing=new Float32Array(0),rxSamples=0,lastDecodedAt=0,peerId=null,peerName='',lastPeerAt=0,ourId=1000+Math.floor(Math.random()*9000),decoder=null,txQueue=Promise.resolve(),currentSymbolMs=120,txFreq=17200,rxFreq=17200,spacing=700;
+const txNodes=new Set(),txTimers=new Set();let txGeneration=0;const discovered=new Map();let pendingPair=null;
+$('deviceId').textContent=String(ourId);
+const log=(s)=>{let el=$('packets');if(el.textContent==='No packets yet.')el.textContent='';el.textContent=(new Date().toLocaleTimeString()+'  '+s+'\n'+el.textContent).slice(0,9000);el.scrollTop=0};
+function setLink(state,detail=''){ $('linkState').textContent=state;$('peer').textContent=detail;$('dot').className='dot '+(state==='Connected'?'on':state==='Discovering'?'wait':'');$('sendMsg').disabled=state!=='Connected'}
+function crc16(a){let c=65535;for(let b of a){c^=b<<8;for(let i=0;i<8;i++)c=(c&32768)?((c<<1)^0x1021)&65535:(c<<1)&65535}return c}
+function bytesToSymbols(a){let o=[];for(let b of a)o.push(b>>6,(b>>4)&3,(b>>2)&3,b&3);return o}
+function symbolsToBytes(a){let o=new Uint8Array(Math.floor(a.length/4));for(let i=0;i<o.length;i++)o[i]=(a[i*4]<<6)|(a[i*4+1]<<4)|(a[i*4+2]<<2)|a[i*4+3];return o}
+function u16(n){return[(n>>8)&255,n&255]}
+function u24(n){return[(n>>16)&255,(n>>8)&255,n&255]}
+function from24(a){return a[0]*65536+a[1]*256+a[2]}
+function frequencies(base){let sp=Math.max(250,Math.min(1200,Number($('spacing').value)||700));let b=Math.max(14000,Math.min(20000-3*sp,Number(base)||17200));return[b,b+sp,b+2*sp,b+3*sp]}
+async function audio(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:48000});if(ctx.state!=='running')await ctx.resume();return ctx}
+function tone(sym,at,duration){let o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=frequencies($('txFreq').value)[sym];g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(.18,at+.008);g.gain.setValueAtTime(.18,at+duration-.01);g.gain.linearRampToValueAtTime(0,at+duration);o.connect(g);g.connect(ctx.destination);txNodes.add(o);o.onended=()=>{txNodes.delete(o);try{o.disconnect();g.disconnect()}catch(e){}};o.start(at);o.stop(at+duration+.01)}
+function frame(type,payload){let body=new Uint8Array(1+3+payload.length);body[0]=type;body.set(u24(ourId),1);body.set(payload,4);let c=crc16(body),all=new Uint8Array(body.length+2);all.set(body);all[body.length]=c>>8;all[body.length+1]=c&255;return [...PRE,...SYNC,...bytesToSymbols(all)]}
+function sendFrame(type,payload){if(!micReady)return Promise.resolve();let syms=frame(type,payload),dur=currentSymbolMs/1000,gen=txGeneration;txQueue=txQueue.then(()=>new Promise(resolve=>{if(!micReady||gen!==txGeneration){resolve();return}txBusy=true;let start=ctx.currentTime+.12,i=0;function batch(){if(!micReady||gen!==txGeneration){txBusy=false;resolve();return}let end=Math.min(i+24,syms.length);for(;i<end;i++){let t=start+i*dur;if(t>ctx.currentTime+.005)tone(syms[i],t,dur)}if(i<syms.length){let timer=setTimeout(()=>{txTimers.delete(timer);batch()},Math.max(8,(start+i*dur-ctx.currentTime)*1000-15));txTimers.add(timer)}else{txBusy=false;resolve()}}batch()}));return txQueue}
+function encodeText(t){let data=new TextEncoder().encode(t);let p=new Uint8Array(1+data.length);p[0]=data.length;p.set(data,1);return p}
+function addMessage(text,from){let b=document.createElement('div');b.className='bubble '+(from==='me'?'me':'');let m=document.createElement('div');m.className='meta';m.textContent=(from==='me'?'You':'Peer')+' · '+new Date().toLocaleTimeString();b.append(m,document.createTextNode(text));$('messages').append(b);$('messages').scrollTop=$('messages').scrollHeight}
+function renderNearby(){
+ const box=$('nearby');box.textContent='';
+ const peers=[...discovered.values()].filter(p=>Date.now()-p.seen<18000);
+ if(!peers.length){box.innerHTML='<span class="small">No devices discovered yet.</span>';return}
+ for(const p of peers){const row=document.createElement('div');row.className='row';row.style.cssText='justify-content:space-between;padding:8px 0;border-top:1px solid var(--line)';
+ const info=document.createElement('div');info.className='grow';const name=document.createElement('b');name.textContent=p.name;const meta=document.createElement('div');meta.className='small';meta.textContent='ID '+String(p.id).padStart(4,'0')+' · '+(p.connected?'Paired':'Broadcast detected');info.append(name,meta);
+ const btn=document.createElement('button');btn.className='secondary';btn.textContent=p.connected?'Paired':(pendingPair===p.id?'Pairing…':'Pair');btn.disabled=!micReady||p.connected||pendingPair!==null;btn.onclick=()=>requestPair(p.id);row.append(info,btn);box.append(row)}
+}
+function markConnected(id){
+ const p=discovered.get(id);if(p)p.connected=true;peerId=id;peerName=p?.name||('Device '+id);lastPeerAt=Date.now();pendingPair=null;setLink('Connected',peerName+' · ID '+String(id).padStart(4,'0'));$('lastPing').textContent='Handshake completed · '+new Date().toLocaleTimeString();$('sendMsg').disabled=false;renderNearby();log('PAIR COMPLETE with '+String(id).padStart(4,'0'));
+}
+function requestPair(id){
+ if(!micReady||pendingPair!==null)return;pendingPair=id;const p=discovered.get(id);renderNearby();log('Pair request sent to '+String(id).padStart(4,'0'));sendFrame(7,new Uint8Array(u24(id)));
+ setTimeout(()=>{if(pendingPair===id){pendingPair=null;renderNearby();log('Pair request timed out for '+String(id).padStart(4,'0'))}},12000);
+}
+function handleFrame(type,id,payload){
+ if(id===ourId)return;
+ const target=payload.length>=3?from24(payload.slice(0,3)):0;
+ if(type===1){
+   const n=payload.length?Math.min(payload[0],payload.length-1):0;
+   const name=n?new TextDecoder().decode(payload.slice(1,1+n)):'Phone';
+   const prev=discovered.get(id)||{};discovered.set(id,{id,name,seen:Date.now(),connected:!!prev.connected});
+   renderNearby();$('lastPing').textContent='Broadcast decoded from '+String(id).padStart(4,'0')+' · '+new Date().toLocaleTimeString();
+   log('RX BEACON · '+name+' [ID '+String(id).padStart(4,'0')+']');return;
+ }
+ if(type===7&&target===ourId){
+   log('RX PAIR REQUEST from '+String(id).padStart(4,'0'));
+   sendFrame(8,new Uint8Array(u24(id)));return;
+ }
+ if(type===8&&target===ourId&&pendingPair===id){
+   log('RX PAIR ACCEPT from '+String(id).padStart(4,'0'));
+   sendFrame(9,new Uint8Array(u24(id)));return;
+ }
+ if(type===9&&target===ourId){
+   log('RX PAIR CONFIRM from '+String(id).padStart(4,'0'));
+   sendFrame(10,new Uint8Array(u24(id)));markConnected(id);return;
+ }
+ if(type===10&&target===ourId&&pendingPair===id){markConnected(id);return}
+ if(type===3&&target===ourId){let text=new TextDecoder().decode(payload.slice(3));addMessage(text,'peer');$('lastPing').textContent='Message packet received · '+new Date().toLocaleTimeString();log('RX MESSAGE from '+String(id).padStart(4,'0')+' · '+text.length+' chars · CRC OK');sendFrame(4,new Uint8Array(u24(id)));return}
+ if(type===4&&target===ourId){$('sendState').textContent='Packet ACK received ✓';log('RX ACK from '+String(id).padStart(4,'0')+' — message delivered');return}
+ if(type===5){sendFrame(6,new Uint8Array(u24(id)));return}
+ if(type===6&&target===ourId){$('lastPing').textContent='PING/PONG round trip confirmed';log('RX PONG from '+String(id).padStart(4,'0'))}
+}
+function goertzel(x,f,sr){let w=2*Math.cos(2*Math.PI*f/sr),s0=0,s1=0,s2=0;for(let v of x){s0=v+w*s1-s2;s2=s1;s1=s0}return s1*s1+s2*s2-w*s1*s2}
+function classify(x){let fs=frequencies($('rxFreq').value),p=fs.map(f=>goertzel(x,f,ctx.sampleRate)),o=p.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);return{sym:o[0][1],ratio:o[0][0]/Math.max(1,o[1][0]),energy:o[0][0]}}
+let decodeState='hunt',preamble=[],frameSyms=[],lastSymbolTime=0,lockedAt=0,symNo=0;
+function resetDecoder(){decodeState='hunt';preamble=[];frameSyms=[];symNo=0}
+function consume(sym){if(decodeState==='hunt'){preamble.push(sym);if(preamble.length>PRE.length)preamble.shift();if(preamble.length===PRE.length){let e=0;for(let i=0;i<PRE.length;i++)if(preamble[i]!==PRE[i])e++;if(e<=3){decodeState='sync';preamble=[];lockedAt=ctx.currentTime;symNo=0;log('Preamble detected')}}return}
+ if(decodeState==='sync'){preamble.push(sym);if(preamble.length===SYNC.length){let e=0;for(let i=0;i<SYNC.length;i++)if(preamble[i]!==SYNC[i])e++;if(e<=1){decodeState='data';frameSyms=[];log('SYNC OK — decoding frame')}else resetDecoder()}return}
+ if(decodeState==='data'){frameSyms.push(sym);if(frameSyms.length>=4){let bytes=symbolsToBytes(frameSyms);let bodyLen=bytes.length-2;if(bodyLen>=4){let declared=bodyLen; // packets are short; wait until a valid CRC appears at a byte boundary
+ for(let n=4;n<=Math.min(256,bodyLen);n++){if(n+2>bytes.length)break;let candidate=bytes.slice(0,n),got=(bytes[n]<<8)|bytes[n+1];if(crc16(candidate)===got){let type=candidate[0],id=from24(candidate.slice(1,4)),payload=candidate.slice(4);handleFrame(type,id,payload);resetDecoder();return}}
+ }}if(frameSyms.length>1100)resetDecoder()}
+}
+function drawSpectrum(){
+ const canvas=$('spectrum'),g=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
+ const bins=new Uint8Array(analyser.frequencyBinCount);analyser.getByteFrequencyData(bins);
+ g.clearRect(0,0,w,h);g.fillStyle='#0b111b';g.fillRect(0,0,w,h);
+ for(let j=0;j<=4;j++){let y=h-j*h/4;g.strokeStyle='#26344a';g.beginPath();g.moveTo(0,y);g.lineTo(w,y);g.stroke()}
+ g.beginPath();g.strokeStyle='#9eb2ff';g.lineWidth=2;let maxVal=0,maxHz=14000;
+ for(let x=0;x<w;x++){let f=14000+x/w*6000,idx=Math.min(bins.length-1,Math.round(f/ctx.sampleRate*analyser.fftSize)),v=bins[idx]||0,y=h-v/255*h;if(v>maxVal){maxVal=v;maxHz=f}if(x===0)g.moveTo(x,y);else g.lineTo(x,y)}g.stroke();
+ const fs=frequencies($('rxFreq').value);fs.forEach((f,i)=>{let x=(f-14000)/6000*w;g.strokeStyle=['#ffcc66','#75d6a0','#ff8b8b','#c79cff'][i];g.setLineDash([5,4]);g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke();g.setLineDash([]);g.fillStyle='#dce5f5';g.font='12px system-ui';g.fillText((f/1000).toFixed(1)+'k',Math.max(2,x+2),14+i*14)});
+ $('spectrumReadout').textContent=`Strongest bin: ${(maxHz/1000).toFixed(2)} kHz · level ${maxVal}/255 · receive tones: ${fs.map(x=>(x/1000).toFixed(2)).join(' / ')} kHz`;
+}
+function processAudio(){if(!micReady)return;drawSpectrum();let data=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(data);let joined=new Float32Array(rxRing.length+data.length);joined.set(rxRing);joined.set(data,rxRing.length);rxRing=joined.slice(-ctx.sampleRate*2);let now=ctx.currentTime;
+ // Search overlapping windows for a preamble; after lock, sample near symbol centers.
+ if(decodeState==='hunt'){if(now-lastDecodedAt>=currentSymbolMs/1000&&rxRing.length>=Math.floor(ctx.sampleRate*currentSymbolMs/1000)){lastDecodedAt=now;let win=Math.floor(ctx.sampleRate*(currentSymbolMs/1000)*.68);let d=classify(rxRing.slice(-win));if(d.energy>1e-6&&d.ratio>1.08)consume(d.sym);else consume(-1)}}
+ else {let target=lockedAt+(symNo+1)*currentSymbolMs/1000;if(now>=target){let win=Math.floor(ctx.sampleRate*(currentSymbolMs/1000)*.68);let d=classify(rxRing.slice(-win));consume(d.energy>1e-6&&d.ratio>1.04?d.sym:-1);symNo++;if(symNo>1400)resetDecoder()}
+ }
+ raf=requestAnimationFrame(processAudio)}
+async function initMic(){if(micReady)return;await audio();stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1},video:false});source=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=4096;source.connect(analyser);micReady=true;rxRing=new Float32Array(0);$('diag').textContent=`Microphone live · AudioContext ${ctx.sampleRate} Hz · ${stream.getAudioTracks()[0].getSettings().channelCount||'?'} channel(s) · spectrum is running`;processAudio();}
+async function start(){await initMic();await audio();currentSymbolMs=Number($('symbol').value);txFreq=Number($('txFreq').value);rxFreq=Number($('rxFreq').value);spacing=Number($('spacing').value);active=true;resetDecoder();setLink('Discovering','Broadcasting ID '+ourId+'…');$('start').disabled=true;$('stop').disabled=false;$('diag').textContent=`Microphone live · ID ${ourId} · TX ${frequencies(txFreq).join(', ')} Hz · RX ${frequencies(rxFreq).join(', ')} Hz`;const beacon=()=>{if(!active)return;let n=new TextEncoder().encode(($('deviceName').value||'Phone').slice(0,20));sendFrame(1,new Uint8Array([n.length,...n]));beaconTimer=setTimeout(beacon,4500)};beacon();scanTimer=setInterval(()=>{for(const [id,p] of discovered)if(Date.now()-p.seen>18000)discovered.delete(id);renderNearby();if(peerId&&Date.now()-lastPeerAt>15000){peerId=null;peerName='';setLink('Discovering','Peer timed out; searching…');log('Peer timeout')}},2000);renderNearby();log('Discovery started · local ID '+ourId)}
+function stop(){active=false;txGeneration++;clearTimeout(beaconTimer);clearInterval(scanTimer);for(const timer of txTimers)clearTimeout(timer);txTimers.clear();for(const node of txNodes){try{node.stop()}catch(e){}try{node.disconnect()}catch(e){}}txNodes.clear();txBusy=false;txQueue=Promise.resolve();resetDecoder();peerId=null;peerName='';pendingPair=null;setLink('Offline','Microphone diagnostics remain on · ID '+ourId);$('start').disabled=false;$('stop').disabled=true;$('diag').textContent=micReady?`Microphone still live · ID ${ourId} · TX stopped · diagnostics continue`:'Microphone not available';renderNearby();log('Discovery stopped · pending transmissions cancelled; diagnostics remain active')}
+$('start').onclick=()=>start().catch(e=>{setLink('Offline','Could not start: '+e.message+' (Use HTTPS and allow microphone)');$('start').disabled=false;$('diag').textContent='Microphone error: '+e.message});$('stop').onclick=stop;
+// Start microphone diagnostics on page load; discovery remains an explicit user action.
+initMic().catch(e=>{$('diag').textContent='Microphone unavailable: '+e.message+' · Allow mic access or reload the HTTPS page.';});
+$('sendMsg').onclick=async()=>{let text=$('compose').value.trim();if(!text||!peerId)return;let data=encodeText(text),payload=new Uint8Array(3+data.length);payload.set(u24(peerId),0);payload.set(data,3);$('sendMsg').disabled=true;$('sendState').textContent='Transmitting message packet…';log(`TX MESSAGE ${new TextEncoder().encode(text).length} bytes to ${peerId.toString(16)}`);await sendFrame(3,payload);addMessage(text,'me');$('compose').value='';$('charCount').textContent='0 / 180';$('sendState').textContent='Packet sent. Waiting for receiver ACK…';$('sendMsg').disabled=!peerId};
+$('compose').oninput=()=>$('charCount').textContent=$('compose').value.length+' / 180';
+for(let id of ['txFreq','rxFreq','spacing','symbol'])$(id).addEventListener('change',()=>{if(active){stop();start().catch(e=>setLink('Offline',e.message))}});
+})();
+</script></body></html>
