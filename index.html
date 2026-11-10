@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ultrasonic Messenger — Link Lab</title>
+<title>Ultrasonic Messenger — Link Lab v7</title>
 <style>
 :root{color-scheme:dark;--bg:#0d1119;--panel:#171f2d;--line:#344258;--fg:#eef3ff;--muted:#9eacc3;--accent:#a9b8ff;--green:#7de0a5;--amber:#ffd27d;--red:#ff8d8d}
 *{box-sizing:border-box}body{margin:auto;max-width:1000px;padding:18px;background:var(--bg);color:var(--fg);font:14px system-ui}h1{font-size:23px;margin:0}h2{font-size:16px;margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:120px}.status{padding:10px;border:1px solid var(--line);background:#0e1521;border-radius:9px;margin-top:9px;white-space:pre-wrap;overflow-wrap:anywhere}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#65738a;margin-right:6px}.dot.on{background:var(--green);box-shadow:0 0 10px #7de0a577}.dot.wait{background:var(--amber)}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}input,select,textarea{width:100%;background:#0e1521;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}textarea{min-height:70px;resize:vertical}button{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}button.secondary{background:#344158;color:var(--fg)}button.danger{background:#633b48;color:white}button:disabled{opacity:.4;cursor:not-allowed}.log{height:170px;overflow:auto;font:12px ui-monospace,monospace;white-space:pre-wrap;background:#0e1521;border:1px solid var(--line);border-radius:9px;padding:9px}.messages{height:210px;overflow:auto;display:flex;flex-direction:column;gap:7px}.bubble{max-width:95%;padding:9px 11px;border-radius:11px;background:#26334a;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.me{align-self:flex-end;background:#303b61}.bubble .meta{font-size:10px;color:#b4c0d5;margin-bottom:4px}.pill{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:20px;color:var(--muted)}progress{width:100%}
 </style></head><body>
-<h1>Ultrasonic Messenger <span class="pill">Link Lab v6</span></h1>
+<h1>Ultrasonic Messenger <span class="pill">Link Lab v7</span></h1>
 <p class="muted">Independent acoustic broadcasting, always-on listening, nearby-device discovery and targeted pairing. No server or network transport is used for acoustic messages.</p>
 <section class="card" style="margin-top:12px"><div class="row" style="justify-content:space-between"><h2 style="margin:0">Open this app on another device</h2><span class="pill">QR from current URL</span></div><div class="row" style="margin-top:10px;align-items:center"><div id="qr" style="background:white;padding:8px;border-radius:8px;min-width:132px;min-height:132px;display:grid;place-items:center;color:#111">Loading QR…</div><div class="grow"><div class="small">QR encodes the exact page URL in this browser address bar. Deploy once, then scan this URL on the other phone.</div><div id="pageUrl" class="status" style="word-break:break-all"></div><button id="copyUrl" class="secondary">Copy page link</button></div></div></section>
 <div class="grid">
@@ -26,7 +26,7 @@
 <div><label>Channel spacing (Hz)</label><input id="spacing" type="number" min="250" max="1200" step="50" value="700"></div>
 <div><label>Symbol duration (ms)</label><select id="symbol"><option value="160">Robust · 160</option><option value="120" selected>Balanced · 120</option><option value="90">Fast · 90</option></select></div>
 </div>
-<p class="small">Use matching receiver base frequency, sender base frequency and spacing on both phones. Frequencies are clamped to 14–20 kHz. Changing settings restarts discovery.</p>
+<p class="small">Use matching receiver base frequency, sender base frequency, channel spacing and symbol duration on both phones. The receiver now searches across timing offsets and locks its symbol clock to the received preamble. The microphone sampler uses overlapping windows for better timing recovery. Frequencies are clamped to 14–20 kHz. Changing settings restarts discovery.</p>
 </section>
 </div>
 <div class="grid">
@@ -35,7 +35,7 @@
 </div>
 <div class="grid">
 <section class="card"><h2>Packet monitor</h2><div class="log" id="packets">No packets yet.</div></section>
-<section class="card"><h2>Diagnostics · always-on mic</h2><div class="status" id="diag">Requesting microphone permission…</div><label>Live receiver spectrum (14–20 kHz)</label><canvas id="spectrum" width="900" height="190" style="width:100%;height:190px;background:#0b111b;border:1px solid var(--line);border-radius:9px"></canvas><div id="spectrumReadout" class="small">Live microphone spectrum · discovery can be started or stopped independently.</div><p class="small">A device appears in Nearby only after its beacon is decoded. Pair starts a targeted four-step request/accept/confirm/complete handshake. A received message is separately CRC-checked. Because acoustic audio is half-duplex in practice, simultaneous transmissions can collide; retry if a packet is missed.</p></section>
+<section class="card"><h2>Diagnostics · always-on mic</h2><div class="status" id="diag">Requesting microphone permission…</div><label>Live receiver spectrum (14–20 kHz)</label><canvas id="spectrum" width="900" height="190" style="width:100%;height:190px;background:#0b111b;border:1px solid var(--line);border-radius:9px"></canvas><div id="spectrumReadout" class="small">Live microphone spectrum · discovery can be started or stopped independently.</div><div id="decoderStatus" class="status small">Decoder: waiting for a broadcast preamble</div><p class="small">A device appears in Nearby only after its beacon preamble, sync sequence and CRC are decoded. Pair starts a targeted four-step request/accept/confirm/complete handshake. A received message is separately CRC-checked. Because acoustic audio is half-duplex in practice, simultaneous transmissions can collide; retry if a packet is missed.</p></section>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -61,7 +61,7 @@ function frequencies(base){let sp=Math.max(250,Math.min(1200,Number($('spacing')
 async function audio(){if(!ctx)ctx=new(window.AudioContext||window.webkitAudioContext)({sampleRate:48000});if(ctx.state!=='running')await ctx.resume();return ctx}
 function tone(sym,at,duration){let o=ctx.createOscillator(),g=ctx.createGain();o.type='sine';o.frequency.value=frequencies($('txFreq').value)[sym];g.gain.setValueAtTime(0,at);g.gain.linearRampToValueAtTime(.18,at+.008);g.gain.setValueAtTime(.18,at+duration-.01);g.gain.linearRampToValueAtTime(0,at+duration);o.connect(g);g.connect(ctx.destination);txNodes.add(o);o.onended=()=>{txNodes.delete(o);try{o.disconnect();g.disconnect()}catch(e){}};o.start(at);o.stop(at+duration+.01)}
 function frame(type,payload){let body=new Uint8Array(1+3+payload.length);body[0]=type;body.set(u24(ourId),1);body.set(payload,4);let c=crc16(body),all=new Uint8Array(body.length+2);all.set(body);all[body.length]=c>>8;all[body.length+1]=c&255;return [...PRE,...SYNC,...bytesToSymbols(all)]}
-function sendFrame(type,payload){if(!micReady)return Promise.resolve();let syms=frame(type,payload),dur=currentSymbolMs/1000,gen=txGeneration;txQueue=txQueue.then(()=>new Promise(resolve=>{if(!micReady||gen!==txGeneration){resolve();return}txBusy=true;let start=ctx.currentTime+.12,i=0;function batch(){if(!micReady||gen!==txGeneration){txBusy=false;resolve();return}let end=Math.min(i+24,syms.length);for(;i<end;i++){let t=start+i*dur;if(t>ctx.currentTime+.005)tone(syms[i],t,dur)}if(i<syms.length){let timer=setTimeout(()=>{txTimers.delete(timer);batch()},Math.max(8,(start+i*dur-ctx.currentTime)*1000-15));txTimers.add(timer)}else{txBusy=false;resolve()}}batch()}));return txQueue}
+function sendFrame(type,payload){if(!micReady)return Promise.resolve();let syms=frame(type,payload),dur=currentSymbolMs/1000,gen=txGeneration;txQueue=txQueue.then(()=>new Promise(resolve=>{if(!micReady||gen!==txGeneration){resolve();return}txBusy=true;let start=ctx.currentTime+.12,i=0;function batch(){if(!micReady||gen!==txGeneration){txBusy=false;resolve();return}let end=Math.min(i+24,syms.length);for(;i<end;i++){let t=start+i*dur;if(t>ctx.currentTime+.005)tone(syms[i],t,dur)}if(i<syms.length){let timer=setTimeout(()=>{txTimers.delete(timer);batch()},Math.max(8,(start+i*dur-ctx.currentTime)*1000-15));txTimers.add(timer)}else{let finish=setTimeout(()=>{txTimers.delete(finish);txBusy=false;resolve()},Math.max(0,(start+syms.length*dur+.025-ctx.currentTime)*1000));txTimers.add(finish)}}batch()}));return txQueue}
 function encodeText(t){let data=new TextEncoder().encode(t);let p=new Uint8Array(1+data.length);p[0]=data.length;p.set(data,1);return p}
 function addMessage(text,from){let b=document.createElement('div');b.className='bubble '+(from==='me'?'me':'');let m=document.createElement('div');m.className='meta';m.textContent=(from==='me'?'You':'Peer')+' · '+new Date().toLocaleTimeString();b.append(m,document.createTextNode(text));$('messages').append(b);$('messages').scrollTop=$('messages').scrollHeight}
 function renderNearby(){
@@ -108,14 +108,89 @@ function handleFrame(type,id,payload){
  if(type===6&&target===ourId){$('lastPing').textContent='PING/PONG round trip confirmed';log('RX PONG from '+String(id).padStart(4,'0'))}
 }
 function goertzel(x,f,sr){let w=2*Math.cos(2*Math.PI*f/sr),s0=0,s1=0,s2=0;for(let v of x){s0=v+w*s1-s2;s2=s1;s1=s0}return s1*s1+s2*s2-w*s1*s2}
-function classify(x){let fs=frequencies($('rxFreq').value),p=fs.map(f=>goertzel(x,f,ctx.sampleRate)),o=p.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);return{sym:o[0][1],ratio:o[0][0]/Math.max(1,o[1][0]),energy:o[0][0]}}
-let decodeState='hunt',preamble=[],frameSyms=[],lastSymbolTime=0,lockedAt=0,symNo=0;
-function resetDecoder(){decodeState='hunt';preamble=[];frameSyms=[];symNo=0}
-function consume(sym){if(decodeState==='hunt'){preamble.push(sym);if(preamble.length>PRE.length)preamble.shift();if(preamble.length===PRE.length){let e=0;for(let i=0;i<PRE.length;i++)if(preamble[i]!==PRE[i])e++;if(e<=3){decodeState='sync';preamble=[];lockedAt=ctx.currentTime;symNo=0;log('Preamble detected')}}return}
- if(decodeState==='sync'){preamble.push(sym);if(preamble.length===SYNC.length){let e=0;for(let i=0;i<SYNC.length;i++)if(preamble[i]!==SYNC[i])e++;if(e<=1){decodeState='data';frameSyms=[];log('SYNC OK — decoding frame')}else resetDecoder()}return}
- if(decodeState==='data'){frameSyms.push(sym);if(frameSyms.length>=4){let bytes=symbolsToBytes(frameSyms);let bodyLen=bytes.length-2;if(bodyLen>=4){let declared=bodyLen; // packets are short; wait until a valid CRC appears at a byte boundary
- for(let n=4;n<=Math.min(256,bodyLen);n++){if(n+2>bytes.length)break;let candidate=bytes.slice(0,n),got=(bytes[n]<<8)|bytes[n+1];if(crc16(candidate)===got){let type=candidate[0],id=from24(candidate.slice(1,4)),payload=candidate.slice(4);handleFrame(type,id,payload);resetDecoder();return}}
- }}if(frameSyms.length>1100)resetDecoder()}
+function classify(x){
+ const fs=frequencies($('rxFreq').value),n=x.length;
+ let meanSq=0;for(let i=0;i<n;i++)meanSq+=x[i]*x[i];
+ const rms=Math.sqrt(meanSq/Math.max(1,n));
+ const p=fs.map(f=>goertzelWindowed(x,f,ctx.sampleRate));
+ const order=p.map((v,i)=>[v,i]).sort((a,b)=>b[0]-a[0]);
+ const ratio=order[0][0]/Math.max(1e-12,order[1][0]);
+ const confident=rms>=0.00018&&ratio>=1.55;
+ return {sym:confident?order[0][1]:-1,rawSym:order[0][1],ratio,rms};
+}
+function goertzelWindowed(x,f,sr){
+ const w=2*Math.cos(2*Math.PI*f/sr);let s0=0,s1=0,s2=0,n=x.length;
+ for(let i=0;i<n;i++){const win=.5-.5*Math.cos(2*Math.PI*i/Math.max(1,n-1));s0=x[i]*win+w*s1-s2;s2=s1;s1=s0;}
+ return Math.max(0,s1*s1+s2*s2-w*s1*s2);
+}
+let decodeState='hunt',rxHistory=[],frameSyms=[],syncSyms=[],lockStart=0,symbolIndex=0,lastPreambleLockAt=-10;
+const RX_WINDOW_SECONDS=2048/48000;
+function setDecoderStatus(t){const el=$('decoderStatus');if(el)el.textContent='Decoder: '+t;}
+function resetDecoder(){decodeState='hunt';frameSyms=[];syncSyms=[];symbolIndex=0;lockStart=0;setDecoderStatus('waiting for a broadcast preamble');}
+function nearestHistory(t){
+ let lo=0,hi=rxHistory.length-1;
+ while(lo<=hi){const mid=(lo+hi)>>1;if(rxHistory[mid].t<t)lo=mid+1;else hi=mid-1;}
+ let a=rxHistory[Math.max(0,Math.min(rxHistory.length-1,hi))],b=rxHistory[Math.max(0,Math.min(rxHistory.length-1,lo))];
+ if(!a)return b||null;if(!b)return a;
+ const best=Math.abs(a.t-t)<=Math.abs(b.t-t)?a:b;
+ return Math.abs(best.t-t)<=.035?best:null;
+}
+function detectPreamble(now){
+ const dur=currentSymbolMs/1000;
+ // Candidate end points are taken from the newest 65 ms of overlapping mic windows.
+ for(let j=rxHistory.length-1;j>=0;j--){
+   const end=rxHistory[j];if(end.t<now-.065)break;
+   if(end.t>now+.005||end.sym!==PRE[PRE.length-1])continue;
+   const firstCenter=end.t-(PRE.length-1)*dur;
+   let valid=0,matches=0;
+   for(let k=0;k<PRE.length;k++){
+     const sample=nearestHistory(firstCenter+k*dur);
+     if(!sample||sample.sym<0)continue;
+     valid++;if(sample.sym===PRE[k])matches++;
+   }
+   if(valid>=14&&matches>=13&&now-lastPreambleLockAt>2.2){
+     lockStart=firstCenter-dur/2;symbolIndex=PRE.length;syncSyms=[];frameSyms=[];decodeState='sync';lastPreambleLockAt=now;
+     setDecoderStatus('preamble locked · recovering symbol clock');
+     log('PREAMBLE detected · symbol timing locked');return true;
+   }
+ }
+ return false;
+}
+function decodeDataSymbol(sym){
+ if(sym<0){setDecoderStatus('frame received with an unclear tone · waiting for next beacon');resetDecoder();return;}
+ frameSyms.push(sym);
+ if(frameSyms.length%4!==0)return;
+ const bytes=symbolsToBytes(frameSyms);
+ for(let n=4;n<=Math.min(256,bytes.length-2);n++){
+   const type=bytes[0],id=from24(bytes.slice(1,4));
+   if(![1,2,3,4,5,6,7,8,9,10].includes(type)||id<1000||id>9999)continue;
+   const got=(bytes[n]<<8)|bytes[n+1],candidate=bytes.slice(0,n);
+   if(crc16(candidate)===got){
+     const payload=candidate.slice(4);
+     log('FRAME CRC OK · type '+type+' · source '+String(id).padStart(4,'0'));
+     handleFrame(type,id,payload);resetDecoder();return;
+   }
+ }
+ if(frameSyms.length>1000){log('Frame too long without a valid CRC · resynchronising');resetDecoder();}
+}
+function processLockedSymbols(now){
+ const dur=currentSymbolMs/1000;
+ while(decodeState!=='hunt'){
+   const center=lockStart+(symbolIndex+.5)*dur;
+   if(now<center+.008)break;
+   const sample=nearestHistory(center),sym=sample?sample.sym:-1;
+   if(decodeState==='sync'){
+     syncSyms.push(sym);symbolIndex++;
+     if(syncSyms.length===SYNC.length){
+       let errors=0;for(let i=0;i<SYNC.length;i++)if(syncSyms[i]!==SYNC[i])errors++;
+       if(errors<=1){decodeState='data';setDecoderStatus('sync accepted · decoding device packet');log('SYNC OK · decoding packet bytes');}
+       else{log('SYNC mismatch · missed packet timing');resetDecoder();}
+     }
+   } else if(decodeState==='data'){
+     symbolIndex++;decodeDataSymbol(sym);
+   }
+   if(symbolIndex>1100){log('Decoder timeout · returning to discovery');resetDecoder();}
+ }
 }
 function drawSpectrum(){
  const canvas=$('spectrum'),g=canvas.getContext('2d'),w=canvas.width,h=canvas.height;
@@ -127,14 +202,19 @@ function drawSpectrum(){
  const fs=frequencies($('rxFreq').value);fs.forEach((f,i)=>{let x=(f-14000)/6000*w;g.strokeStyle=['#ffcc66','#75d6a0','#ff8b8b','#c79cff'][i];g.setLineDash([5,4]);g.beginPath();g.moveTo(x,0);g.lineTo(x,h);g.stroke();g.setLineDash([]);g.fillStyle='#dce5f5';g.font='12px system-ui';g.fillText((f/1000).toFixed(1)+'k',Math.max(2,x+2),14+i*14)});
  $('spectrumReadout').textContent=`Strongest bin: ${(maxHz/1000).toFixed(2)} kHz · level ${maxVal}/255 · receive tones: ${fs.map(x=>(x/1000).toFixed(2)).join(' / ')} kHz`;
 }
-function processAudio(){if(!micReady)return;drawSpectrum();let data=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(data);let joined=new Float32Array(rxRing.length+data.length);joined.set(rxRing);joined.set(data,rxRing.length);rxRing=joined.slice(-ctx.sampleRate*2);let now=ctx.currentTime;
- // Search overlapping windows for a preamble; after lock, sample near symbol centers.
- if(decodeState==='hunt'){if(now-lastDecodedAt>=currentSymbolMs/1000&&rxRing.length>=Math.floor(ctx.sampleRate*currentSymbolMs/1000)){lastDecodedAt=now;let win=Math.floor(ctx.sampleRate*(currentSymbolMs/1000)*.68);let d=classify(rxRing.slice(-win));if(d.energy>1e-6&&d.ratio>1.08)consume(d.sym);else consume(-1)}}
- else {let target=lockedAt+(symNo+1)*currentSymbolMs/1000;if(now>=target){let win=Math.floor(ctx.sampleRate*(currentSymbolMs/1000)*.68);let d=classify(rxRing.slice(-win));consume(d.energy>1e-6&&d.ratio>1.04?d.sym:-1);symNo++;if(symNo>1400)resetDecoder()}
- }
- raf=requestAnimationFrame(processAudio)}
-async function initMic(){if(micReady)return;await audio();stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1},video:false});source=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=4096;source.connect(analyser);micReady=true;rxRing=new Float32Array(0);$('diag').textContent=`Microphone live · AudioContext ${ctx.sampleRate} Hz · ${stream.getAudioTracks()[0].getSettings().channelCount||'?'} channel(s) · spectrum is running`;processAudio();}
-async function start(){await initMic();await audio();currentSymbolMs=Number($('symbol').value);txFreq=Number($('txFreq').value);rxFreq=Number($('rxFreq').value);spacing=Number($('spacing').value);active=true;resetDecoder();setLink('Discovering','Broadcasting ID '+ourId+'…');$('start').disabled=true;$('stop').disabled=false;$('diag').textContent=`Microphone live · ID ${ourId} · TX ${frequencies(txFreq).join(', ')} Hz · RX ${frequencies(rxFreq).join(', ')} Hz`;const beacon=()=>{if(!active)return;let n=new TextEncoder().encode(($('deviceName').value||'Phone').slice(0,20));sendFrame(1,new Uint8Array([n.length,...n]));beaconTimer=setTimeout(beacon,4500)};beacon();scanTimer=setInterval(()=>{for(const [id,p] of discovered)if(Date.now()-p.seen>18000)discovered.delete(id);renderNearby();if(peerId&&Date.now()-lastPeerAt>15000){peerId=null;peerName='';setLink('Discovering','Peer timed out; searching…');log('Peer timeout')}},2000);renderNearby();log('Discovery started · local ID '+ourId)}
+function processAudio(){
+ if(!micReady)return;
+ drawSpectrum();
+ const data=new Float32Array(analyser.fftSize);analyser.getFloatTimeDomainData(data);
+ const centerTime=ctx.currentTime-data.length/(2*ctx.sampleRate);
+ const sample={t:centerTime,...classify(data)};rxHistory.push(sample);
+ while(rxHistory.length&&rxHistory[0].t<centerTime-3.4)rxHistory.shift();
+ if(!txBusy){if(decodeState==='hunt')detectPreamble(centerTime);
+ if(decodeState!=='hunt')processLockedSymbols(centerTime);}
+ raf=requestAnimationFrame(processAudio);
+}
+async function initMic(){if(micReady)return;await audio();stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1},video:false});source=ctx.createMediaStreamSource(stream);analyser=ctx.createAnalyser();analyser.fftSize=2048;source.connect(analyser);micReady=true;rxHistory=[];$('diag').textContent=`Microphone live · AudioContext ${ctx.sampleRate} Hz · ${stream.getAudioTracks()[0].getSettings().channelCount||'?'} channel(s) · spectrum is running`;processAudio();}
+async function start(){await initMic();await audio();currentSymbolMs=Number($('symbol').value);txFreq=Number($('txFreq').value);rxFreq=Number($('rxFreq').value);spacing=Number($('spacing').value);active=true;resetDecoder();setLink('Discovering','Broadcasting ID '+ourId+'…');$('start').disabled=true;$('stop').disabled=false;$('diag').textContent=`Microphone live · ID ${ourId} · TX ${frequencies(txFreq).join(', ')} Hz · RX ${frequencies(rxFreq).join(', ')} Hz`;const beacon=async()=>{if(!active)return;let n=new TextEncoder().encode(($('deviceName').value||'Phone').slice(0,20));try{await sendFrame(1,new Uint8Array([n.length,...n]));}catch(e){log('Beacon transmit error: '+e.message)}if(active)beaconTimer=setTimeout(beacon,2200)};beacon();scanTimer=setInterval(()=>{for(const [id,p] of discovered)if(Date.now()-p.seen>18000)discovered.delete(id);renderNearby();if(peerId&&Date.now()-lastPeerAt>15000){peerId=null;peerName='';setLink('Discovering','Peer timed out; searching…');log('Peer timeout')}},2000);renderNearby();log('Discovery started · local ID '+ourId)}
 function stop(){active=false;txGeneration++;clearTimeout(beaconTimer);clearInterval(scanTimer);for(const timer of txTimers)clearTimeout(timer);txTimers.clear();for(const node of txNodes){try{node.stop()}catch(e){}try{node.disconnect()}catch(e){}}txNodes.clear();txBusy=false;txQueue=Promise.resolve();resetDecoder();peerId=null;peerName='';pendingPair=null;setLink('Offline','Microphone diagnostics remain on · ID '+ourId);$('start').disabled=false;$('stop').disabled=true;$('diag').textContent=micReady?`Microphone still live · ID ${ourId} · TX stopped · diagnostics continue`:'Microphone not available';renderNearby();log('Discovery stopped · pending transmissions cancelled; diagnostics remain active')}
 $('start').onclick=()=>start().catch(e=>{setLink('Offline','Could not start: '+e.message+' (Use HTTPS and allow microphone)');$('start').disabled=false;$('diag').textContent='Microphone error: '+e.message});$('stop').onclick=stop;
 // Start microphone diagnostics on page load; discovery remains an explicit user action.
