@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ultrasonic Messenger — Link Lab v10</title>
+<title>Ultrasonic Messenger — Link Lab v11</title>
 <style>
 :root{color-scheme:dark;--bg:#0d1119;--panel:#171f2d;--line:#344258;--fg:#eef3ff;--muted:#9eacc3;--accent:#a9b8ff;--green:#7de0a5;--amber:#ffd27d;--red:#ff8d8d}
 *{box-sizing:border-box}body{margin:auto;max-width:1000px;padding:18px;background:var(--bg);color:var(--fg);font:14px system-ui}h1{font-size:23px;margin:0}h2{font-size:16px;margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:120px}.status{padding:10px;border:1px solid var(--line);background:#0e1521;border-radius:9px;margin-top:9px;white-space:pre-wrap;overflow-wrap:anywhere}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#65738a;margin-right:6px}.dot.on{background:var(--green);box-shadow:0 0 10px #7de0a577}.dot.wait{background:var(--amber)}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}input,select,textarea{width:100%;background:#0e1521;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}textarea{min-height:70px;resize:vertical}button{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}button.secondary{background:#344158;color:var(--fg)}button.danger{background:#633b48;color:white}button:disabled{opacity:.4;cursor:not-allowed}.log{height:200px;overflow:auto;font:12px ui-monospace,monospace;background:#0e1521;border:1px solid var(--line);border-radius:9px;padding:9px}.log div{white-space:pre-wrap;overflow-wrap:anywhere}.messages{height:210px;overflow:auto;display:flex;flex-direction:column;gap:7px}.bubble{max-width:95%;padding:9px 11px;border-radius:11px;background:#26334a;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.me{align-self:flex-end;background:#303b61}.bubble .meta{font-size:10px;color:#b4c0d5;margin-bottom:4px}.pill{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:20px;color:var(--muted)}
@@ -9,8 +9,8 @@ canvas{display:block;width:100%;background:#0b111b;border:1px solid var(--line);
 .check{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--fg)}.check input{width:auto}
 ul.tips{margin:6px 0 0 18px;padding:0;color:var(--muted);font-size:12px;line-height:1.55}
 </style></head><body>
-<h1>Ultrasonic Messenger <span class="pill">Link Lab v10</span></h1>
-<p class="muted">Speaker-to-microphone messaging in the 19–22 kHz band. Each symbol carries up to 128 parallel tones (32 groups × 2 bits, an “audio QR”), synced by an up/down chirp that also corrects clock and Doppler drift, protected by Reed–Solomon (≈50% parity) and CRC, with acknowledged delivery. No server or network carries the messages.</p>
+<h1>Ultrasonic Messenger <span class="pill">Link Lab v11</span></h1>
+<p class="muted">Speaker-to-microphone messaging in the near-inaudible 17–19 kHz band by default (19–22 kHz optional). Each symbol carries many parallel tones (84 by default, up to 128 in the 19–22 kHz band; 4-tone groups × 2 bits each, an “audio QR”), synced by an up/down chirp that also corrects clock and Doppler drift, protected by Reed–Solomon (≈50% parity) and CRC, with acknowledged delivery. No server or network carries the messages.</p>
 
 <section class="card" style="margin-top:12px"><div class="row"><button id="enableAudio">Enable microphone &amp; speaker</button><div class="grow small" id="audioState">Audio is off. Tap the button (browsers require a tap before audio can start). HTTPS is required.</div></div></section>
 
@@ -29,8 +29,8 @@ ul.tips{margin:6px 0 0 18px;padding:0;color:var(--muted);font-size:12px;line-hei
 <section class="card">
 <h2>Radio settings</h2>
 <div class="grid" style="margin:0;grid-template-columns:1fr 1fr">
-<div><label>Band</label><select id="band"><option value="b19">19.0–22.0 kHz (default)</option><option value="b20">20.0–22.0 kHz (fully inaudible)</option><option value="audible">2.0–5.0 kHz (audible, debug)</option><option value="custom">Custom</option></select></div>
-<div><label>Mode</label><select id="preset"><option value="max">Max bandwidth · 128 tones · 43 ms</option><option value="fast">Fast turnaround · 32 tones · 11 ms</option><option value="turbo">Turbo symbols · 16 tones · 125 sym/s</option><option value="range">Long range · 8 tones · slow</option></select></div>
+<div><label>Band</label><select id="band"><option value="b17">17.0–19.0 kHz (near-inaudible, default)</option><option value="b19">19.0–22.0 kHz (128 tones)</option><option value="b20">20.0–22.0 kHz (fully inaudible)</option><option value="audible">2.0–5.0 kHz (audible, debug)</option><option value="custom">Custom</option></select></div>
+<div><label>Mode</label><select id="preset"><option value="max">Max bandwidth · 43 ms symbols</option><option value="fast">Fast turnaround · 11 ms symbols</option><option value="turbo">Turbo symbols · 125 sym/s</option><option value="range">Long range · 8 tones · slow</option></select></div>
 <div><label>Lowest tone (Hz)</label><input id="lo" type="number" step="100"></div>
 <div><label>Highest tone (Hz)</label><input id="hi" type="number" step="100"></div>
 <div style="grid-column:1/-1"><label>Volume <span id="ampVal"></span></label><input id="amp" type="range" min="0.1" max="1" step="0.05"></div>
@@ -60,7 +60,7 @@ ul.tips{margin:6px 0 0 18px;padding:0;color:var(--muted);font-size:12px;line-hei
 
 <section class="card" style="margin-top:12px"><h2>If devices do not see each other</h2><ul class="tips">
 <li>Both devices must use identical band and mode. Open the app on the second device by scanning the QR code above; it carries the settings.</li>
-<li>Run <b>Self-test</b> on each device first. If it fails, that phone cannot play or hear its own 19–22 kHz tones: raise media volume to maximum, try <i>Long range</i>, or try the <i>Audible</i> band to confirm everything else works.</li>
+<li>Run <b>Self-test</b> on each device first. If it fails, that phone cannot play or hear its own tones in the selected band: raise media volume to maximum, try <i>Long range</i>, or try the <i>Audible</i> band to confirm everything else works.</li>
 <li>Use <b>Tone sweep</b> to see which tones your hardware passes. Many phone speakers and microphones roll off above 20–21 kHz; weak tones are compensated, but dead ones cost error-correction budget.</li>
 <li><i>Max bandwidth</i> carries the most data per second; <i>Fast turnaround</i> and <i>Turbo</i> have shorter symbols that tolerate hand movement better but resist echoes less; <i>Long range</i> concentrates power into few tones for distance.</li>
 <li>Many simultaneous tones need about 7 dB more signal than a single tone. If messages fail beyond 1 m, move closer or switch to <i>Long range</i>.</li>
@@ -215,12 +215,12 @@ return{TYPE,TYPE_NAME,TH,MAX_BODY,PRESETS,makeConfig,encodeFrame,synthesize,swee
 <script>
 /*APP-START*/
 (function(){'use strict';
-const VERSION='v10';
+const VERSION='v11';
 const $=id=>document.getElementById(id);
 const T=UM.TYPE,TN=UM.TYPE_NAME,enc=new TextEncoder(),dec=new TextDecoder('utf-8',{fatal:false});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),pad=n=>String(n).padStart(4,'0');
 const TURN=150,MAX_TEXT=180,NAME_BYTES=12;
-const BANDS={b19:[19000,22000],b20:[20000,22000],audible:[2000,5000]};
+const BANDS={b17:[17000,19000],b19:[19000,22000],b20:[20000,22000],audible:[2000,5000]};
 const store={get(k,s){try{return(s?sessionStorage:localStorage).getItem(k)}catch(e){return null}},set(k,v,s){try{(s?sessionStorage:localStorage).setItem(k,v)}catch(e){}}};
 const ago=t=>{const s=Math.round((Date.now()-t)/1000);return s<2?'just now':s<120?s+' s ago':Math.round(s/60)+' min ago'};
 
@@ -236,8 +236,8 @@ function log(s,cls){const el=$('packets'),d=document.createElement('div');d.text
 function setDecoder(s,cls){const el=$('decoderStatus');el.textContent='Decoder: '+s;el.className='status small '+(cls||'')}
 
 // ---------- settings ----------
-let settings={lo:19000,hi:22000,preset:'max',amp:0.75};
-try{const j=JSON.parse(store.get('um.settings.v10')||'null');if(j)Object.assign(settings,j)}catch(e){}
+let settings={lo:17000,hi:19000,preset:'max',amp:0.75};
+try{const j=JSON.parse(store.get('um.settings.v11')||'null');if(j)Object.assign(settings,j)}catch(e){}
 {const m=/cfg=(\d+)-(\d+)-([a-z]+)/.exec(location.hash);if(m&&UM.PRESETS[m[3]])Object.assign(settings,{lo:+m[1],hi:+m[2],preset:m[3]})}
 const curRate=()=>ctx?ctx.sampleRate:48000;
 function fillInputs(){$('lo').value=settings.lo;$('hi').value=settings.hi;$('preset').value=settings.preset;$('amp').value=settings.amp;$('ampVal').textContent=Math.round(settings.amp*100)+'%';
@@ -248,14 +248,14 @@ function validate(s){if(![s.lo,s.hi].every(Number.isFinite))return'Enter numbers
 function summary(){const c=UM.makeConfig({sampleRate:curRate(),...settings}),hi=UM.frameDuration(c,UM.bodyLen(2)),ack=UM.frameDuration(c,7),big=UM.frameDuration(c,UM.bodyLen(MAX_TEXT));
  $('summary').textContent=`${c.nt} tones (${c.ng} groups × 4) from ${(c.freqs[0]/1000).toFixed(2)} to ${(c.freqs[c.nt-1]/1000).toFixed(2)} kHz, ${c.df.toFixed(1)} Hz apart\n${c.symRate.toFixed(1)} symbols/s × ${2*c.ng} bits = ${Math.round(c.bitrate)} bit/s raw (≈ ${Math.round(c.bitrate*0.6)} bit/s after error correction)\n“hi” ≈ ${hi.toFixed(2)} s on air · ACK ≈ ${ack.toFixed(2)} s · 180-byte message ≈ ${big.toFixed(2)} s\nEcho tolerance ≈ ${c.echoMs.toFixed(1)} ms · chirp sync ${(c.cLo/1000).toFixed(1)}→${(c.cHi/1000).toFixed(1)} kHz`}
 function applySettings(s){const err=validate(s),msg=$('settingsMsg');if(err){msg.textContent=err;msg.className='small bad';fillInputs();return false}msg.textContent='';
- const changed=s.lo!==settings.lo||s.hi!==settings.hi||s.preset!==settings.preset;settings=s;store.set('um.settings.v10',JSON.stringify(settings));
+ const changed=s.lo!==settings.lo||s.hi!==settings.hi||s.preset!==settings.preset;settings=s;store.set('um.settings.v11',JSON.stringify(settings));
  try{history.replaceState(null,'','#cfg='+s.lo+'-'+s.hi+'-'+s.preset)}catch(e){}
  fillInputs();summary();renderQR();if(changed&&audioReady){rebuildModem();log(`Radio settings changed · ${s.lo}–${s.hi} Hz · ${UM.PRESETS[s.preset].name}`,'warn')}return true}
 const readInputs=()=>({...settings,lo:Math.round(+$('lo').value),hi:Math.round(+$('hi').value),preset:$('preset').value});
 $('band').onchange=()=>{const v=$('band').value;if(v!=='custom')applySettings({...settings,lo:BANDS[v][0],hi:BANDS[v][1]})};
 $('preset').onchange=()=>applySettings(readInputs());
 for(const id of['lo','hi'])$(id).onchange=()=>applySettings(readInputs());
-$('amp').oninput=()=>{settings.amp=+$('amp').value;$('ampVal').textContent=Math.round(settings.amp*100)+'%';store.set('um.settings.v10',JSON.stringify(settings))};
+$('amp').oninput=()=>{settings.amp=+$('amp').value;$('ampVal').textContent=Math.round(settings.amp*100)+'%';store.set('um.settings.v11',JSON.stringify(settings))};
 
 // ---------- QR ----------
 function renderQR(){const url=location.href;$('pageUrl').textContent=url;const q=$('qr');q.textContent='';if(window.QRCode)new QRCode(q,{text:url,width:116,height:116,colorDark:'#000',colorLight:'#fff',correctLevel:QRCode.CorrectLevel.M});else q.textContent='QR library unavailable'}
