@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Ultrasonic Messenger — Link Lab v8</title>
+<title>Ultrasonic Messenger — Link Lab v9</title>
 <style>
 :root{color-scheme:dark;--bg:#0d1119;--panel:#171f2d;--line:#344258;--fg:#eef3ff;--muted:#9eacc3;--accent:#a9b8ff;--green:#7de0a5;--amber:#ffd27d;--red:#ff8d8d}
 *{box-sizing:border-box}body{margin:auto;max-width:1000px;padding:18px;background:var(--bg);color:var(--fg);font:14px system-ui}h1{font-size:23px;margin:0}h2{font-size:16px;margin:0 0 10px}.muted{color:var(--muted)}.small{font-size:12px;color:var(--muted)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(285px,1fr));gap:12px;margin-top:13px}.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px}.row{display:flex;gap:9px;align-items:center;flex-wrap:wrap}.grow{flex:1;min-width:120px}.status{padding:10px;border:1px solid var(--line);background:#0e1521;border-radius:9px;margin-top:9px;white-space:pre-wrap;overflow-wrap:anywhere}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#65738a;margin-right:6px}.dot.on{background:var(--green);box-shadow:0 0 10px #7de0a577}.dot.wait{background:var(--amber)}label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}input,select,textarea{width:100%;background:#0e1521;color:var(--fg);border:1px solid var(--line);border-radius:8px;padding:9px;font:inherit}textarea{min-height:70px;resize:vertical}button{border:0;border-radius:9px;padding:10px 13px;background:var(--accent);color:#111827;font-weight:700;cursor:pointer}button.secondary{background:#344158;color:var(--fg)}button.danger{background:#633b48;color:white}button:disabled{opacity:.4;cursor:not-allowed}.log{height:200px;overflow:auto;font:12px ui-monospace,monospace;background:#0e1521;border:1px solid var(--line);border-radius:9px;padding:9px}.log div{white-space:pre-wrap;overflow-wrap:anywhere}.messages{height:210px;overflow:auto;display:flex;flex-direction:column;gap:7px}.bubble{max-width:95%;padding:9px 11px;border-radius:11px;background:#26334a;white-space:pre-wrap;overflow-wrap:anywhere}.bubble.me{align-self:flex-end;background:#303b61}.bubble .meta{font-size:10px;color:#b4c0d5;margin-bottom:4px}.pill{font-size:11px;padding:3px 8px;border:1px solid var(--line);border-radius:20px;color:var(--muted)}
@@ -9,7 +9,7 @@ canvas{display:block;width:100%;background:#0b111b;border:1px solid var(--line);
 .check{display:flex;gap:8px;align-items:center;margin-top:10px;font-size:13px;color:var(--fg)}.check input{width:auto}
 ul.tips{margin:6px 0 0 18px;padding:0;color:var(--muted);font-size:12px;line-height:1.55}
 </style></head><body>
-<h1>Ultrasonic Messenger <span class="pill">Link Lab v8</span></h1>
+<h1>Ultrasonic Messenger <span class="pill">Link Lab v9</span></h1>
 <p class="muted">Speaker-to-microphone messaging between nearby devices: 16-tone FSK, Costas-array preamble sync, Reed–Solomon error correction, CRC and acknowledged delivery with retries. No server or network carries the messages.</p>
 
 <section class="card" style="margin-top:12px"><div class="row"><button id="enableAudio">Enable microphone &amp; speaker</button><div class="grow small" id="audioState">Audio is off. Tap the button (browsers require a tap before audio can start). HTTPS is required.</div></div></section>
@@ -141,7 +141,7 @@ return{TYPE,TYPE_NAME,PRE,NT,TH,MAX_BODY,makeConfig,encodeFrame,synthesize,sweep
 <script>
 /*APP-START*/
 (function(){'use strict';
-const VERSION='v8';
+const VERSION='v9';
 const $=id=>document.getElementById(id);
 const T=UM.TYPE,TN=UM.TYPE_NAME,enc=new TextEncoder(),dec=new TextDecoder('utf-8',{fatal:false});
 const sleep=ms=>new Promise(r=>setTimeout(r,ms)),pad=n=>String(n).padStart(4,'0');
@@ -230,18 +230,27 @@ function playSamples(samples){return new Promise(resolve=>{const b=ctx.createBuf
  txActive=true;clearTimeout(unmuteTimer);if(rx&&!loopbackOn())rx.setMuted(true);updateLink();let done=false;
  const fin=()=>{if(done)return;done=true;txActive=false;curSource=null;const hold=250+1000*((ctx.outputLatency||0)+(ctx.baseLatency||0));unmuteTimer=setTimeout(()=>{if(!txActive&&rx)rx.setMuted(false)},hold);updateLink();resolve()};
  s.onended=fin;setTimeout(fin,samples.length/ctx.sampleRate*1000+2000);curSource=s;s.start()})}
-function enqueue(item,opt){opt=opt||{};return new Promise(res=>{const it={...item,res,notBefore:performance.now()+(opt.delay||0)};if(opt.priority)q.unshift(it);else q.push(it);pump()})}
-async function pump(){if(qRunning)return;qRunning=true;try{while(q.length){const it=q.shift();const wait=it.notBefore-performance.now();if(wait>0)await sleep(wait);if(!audioReady){it.res();continue}
+// priority: 2 = replies (ACK/PAIR_ACK/PONG), 1 = requests and messages, 0 = beacons
+let qOrder=0,quietUntil=0;
+const isBeacon=it=>!!(it.spec&&it.spec.type===T.BEACON);
+function enqueue(item,opt){opt=opt||{};return new Promise(res=>{const it={...item,res,order:qOrder++,notBefore:performance.now()+(opt.delay||0),prio:opt.priority?2:isBeacon(item)?0:1};q.push(it);pump()})}
+async function pump(){if(qRunning)return;qRunning=true;try{while(q.length){
+  // listen before talk, then pick the most urgent item (so a reply never waits behind a beacon)
   const t0=performance.now();while(rx&&rx.busy()&&!loopbackOn()&&performance.now()-t0<7000)await sleep(150+Math.random()*350);
+  let bi=0;for(let i=1;i<q.length;i++)if(q[i].prio>q[bi].prio||(q[i].prio===q[bi].prio&&q[i].order<q[bi].order))bi=i;
+  const it=q[bi],wait=it.notBefore-performance.now();if(wait>0){await sleep(Math.min(wait,100));continue}
+  q.splice(bi,1);
+  if(!audioReady||(isBeacon(it)&&performance.now()<quietUntil)){it.res();continue}
   try{if(it.raw)await playSamples(it.raw);else await transmit(it.spec)}catch(e){log('TX error: '+e.message,'bad')}it.res()}}finally{qRunning=false}}
 async function transmit(spec){const f={src:myId,dst:0,seq:0,payload:[],...spec},syms=UM.encodeFrame(f),samples=UM.synthesize(cfg,syms,settings.amp);curSpec=f;
  log(`TX ${TN[f.type]}${f.dst?' → '+pad(f.dst):' (broadcast)'} · seq ${f.seq} · ${syms.length} symbols · ${(samples.length/ctx.sampleRate).toFixed(1)} s`,'tx');await playSamples(samples);curSpec=null}
 const send=(spec,opt)=>enqueue({spec},opt);
 const waiters=new Set();
-function waitFor(pred,ms){return new Promise(res=>{const w={pred,res};w.timer=setTimeout(()=>{waiters.delete(w);res(null)},ms);waiters.add(w)})}
+// keeps waiting (up to 15 s extra) while a frame is still arriving or we are on air
+function waitFor(pred,ms){return new Promise(res=>{const w={pred,res},limit=performance.now()+ms+15000;const arm=d=>{w.timer=setTimeout(()=>{if((txActive||(rx&&(rx.state==='data'||rx.busy())))&&performance.now()<limit){arm(700);return}waiters.delete(w);res(null)},d)};arm(ms);waiters.add(w)})}
 const replyTimeout=L=>UM.frameDuration(cfg,L)*1000+TURN+3500;
 let exchanges=0;
-async function sendWithRetry(spec,match,replyL,tries,onAttempt){exchanges++;try{for(let a=1;a<=tries;a++){if(onAttempt)onAttempt(a);await send(spec);const r=await waitFor(match,replyTimeout(replyL));if(r)return r;if(a<tries){log(`No reply to ${TN[spec.type]} (attempt ${a}/${tries}) · retrying`,'warn');await sleep(300+Math.random()*900)}}return null}finally{exchanges--}}
+async function sendWithRetry(spec,match,replyL,tries,onAttempt){exchanges++;try{for(let a=1;a<=tries;a++){if(onAttempt)onAttempt(a);await send(spec);const r=await waitFor(match,replyTimeout(replyL));if(r)return r;if(a<tries){log(`No reply to ${TN[spec.type]} (attempt ${a}/${tries}) · retrying`,'warn');await sleep(300+Math.random()*900)}}return null}finally{exchanges--;quietUntil=performance.now()+6000}}
 
 // ---------- protocol ----------
 const peers=new Map(),seenMsgs=new Map();let peerId=null,pairing=null,seqCounter=Math.floor(Math.random()*256),sending=false,broadcasting=false,beaconTimer=0;
@@ -252,22 +261,24 @@ function handleFrame(f){
  const qs=`match ${f.quality.score.toFixed(2)} · ${f.quality.fixed} fixed · ${f.quality.level.toFixed(0)} dBFS`;
  if(f.src===myId){log(`LOOPBACK ✓ decoded own ${f.typeName} · ${qs}`,'good');return}
  const p=touchPeer(f.src,f.quality.score);
+ if(f.type===T.BEACON||f.type===T.PAIR_REQ||f.type===T.PAIR_ACK){const n=dec.decode(f.payload).trim();if(n)p.name=n}
  log(`RX ${f.typeName} from ${p.name} [${pad(f.src)}]${f.dst?' → '+pad(f.dst):''} · seq ${f.seq} · ${qs}`,'good');
  if(f.dst!==0&&f.dst!==myId){renderNearby();return}
- const nm=()=>{const n=dec.decode(f.payload).trim();if(n)p.name=n};
+ if(f.dst===myId)quietUntil=performance.now()+8000; // hold beacons while a conversation is going on
  switch(f.type){
-  case T.BEACON:nm();break;
-  case T.PAIR_REQ:nm();markPaired(f.src);send({type:T.PAIR_ACK,dst:f.src,seq:f.seq,payload:nameBytes()},{priority:true,delay:TURN});break;
-  case T.PAIR_ACK:nm();break;
-  case T.MSG:{send({type:T.ACK,dst:f.src,seq:f.seq},{priority:true,delay:TURN});const key=f.src+':'+f.seq+':'+UM.crc16(f.payload),now=Date.now();if(seenMsgs.has(key)&&now-seenMsgs.get(key)<180000){log('Duplicate message (sender missed our ACK) · re-acknowledged','warn')}else{seenMsgs.set(key,now);addMessage(dec.decode(f.payload),p.name)}break}
+  case T.PAIR_REQ:if(peerId!==f.src)markPaired(f.src,'incoming');send({type:T.PAIR_ACK,dst:f.src,seq:f.seq,payload:nameBytes()},{priority:true,delay:TURN});break;
+  case T.PAIR_ACK:if(pairing!==f.src&&peerId!==f.src)markPaired(f.src,'incoming');break; // late ACK after our retries gave up
+  case T.MSG:{if(peerId===null)markPaired(f.src,'auto');send({type:T.ACK,dst:f.src,seq:f.seq},{priority:true,delay:TURN});const key=f.src+':'+f.seq+':'+UM.crc16(f.payload),now=Date.now();if(seenMsgs.has(key)&&now-seenMsgs.get(key)<180000){log('Duplicate message (sender missed our ACK) · re-acknowledged','warn')}else{seenMsgs.set(key,now);addMessage(dec.decode(f.payload),p.name)}break}
   case T.PING:send({type:T.PONG,dst:f.src,seq:f.seq},{priority:true,delay:TURN});break;
  }
  renderNearby();updateLink()}
-function markPaired(id){peerId=id;for(const p of peers.values())p.paired=p.id===id;const p=peers.get(id);log(`PAIRED with ${p?p.name:''} [${pad(id)}]`,'good');renderNearby();updateLink()}
+function markPaired(id,how){peerId=id;for(const p of peers.values())p.paired=p.id===id;const p=peers.get(id),nm=p?p.name:'Device '+pad(id);
+ log(how==='incoming'?`PAIRED · ${nm} [${pad(id)}] paired with you · both sides can send now`:how==='auto'?`PAIRED automatically with ${nm} [${pad(id)}] so you can reply`:`PAIRED with ${nm} [${pad(id)}] · both sides can send now`,'good');
+ renderNearby();updateLink();if(!sending){$('sendState').textContent=(how==='incoming'?`${nm} paired with you.`:how==='auto'?`Paired with ${nm} (they messaged you).`:`Paired with ${nm}.`)+' Messages work in both directions; no need to pair from this side.';$('sendState').className='status good'}}
 async function requestPair(id){if(!(await ensureAudio())||pairing!==null)return;pairing=id;renderNearby();
  const r=await sendWithRetry({type:T.PAIR_REQ,dst:id,seq:nextSeq(),payload:nameBytes()},f=>f.type===T.PAIR_ACK&&f.src===id&&f.dst===myId,7+NAME_BYTES,3);
  pairing=null;if(r)markPaired(id);else log(`Pairing with ${pad(id)} failed: no PAIR_ACK after 3 attempts. Move closer or raise volume.`,'bad');renderNearby();updateLink()}
-function unpair(){peerId=null;for(const p of peers.values())p.paired=false;log('Unpaired','warn');renderNearby();updateLink()}
+function unpair(){$('sendState').className='status';peerId=null;for(const p of peers.values())p.paired=false;log('Unpaired','warn');renderNearby();updateLink()}
 function beaconSpec(){return{type:T.BEACON,dst:0,seq:nextSeq(),payload:nameBytes()}}
 function scheduleBeacon(first){clearTimeout(beaconTimer);if(!broadcasting)return;beaconTimer=setTimeout(async()=>{if(!broadcasting)return;if(!q.length&&!exchanges)await send(beaconSpec());scheduleBeacon(false)},first?150:4000+Math.random()*5000)}
 $('start').onclick=async()=>{if(!(await ensureAudio()))return;broadcasting=true;$('start').disabled=true;$('stop').disabled=false;log('Broadcasting started · beacon every ~4–9 s','good');scheduleBeacon(true);updateLink()};
